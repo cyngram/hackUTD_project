@@ -27,7 +27,7 @@ import InsightPanel from "./components/InsightPanel";
 import BudgetPanel from "./components/BudgetPanel";
 
 const slogans = [
-  "everything circling your financial life",
+  "Everything circling your financial life",
   "Keep your money in orbit",
 ];
 
