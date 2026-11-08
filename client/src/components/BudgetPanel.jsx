@@ -59,7 +59,7 @@ export default function BudgetPanel({ customerId, onClose, onAsk }) {
               ))}
             </div>
 
-            <div className="budget-totals">
+            <div className="stat-grid">
               <div><small>Income</small><strong>{money(month.income)}</strong></div>
               <div><small>Spending</small><strong>{money(month.spending)}</strong></div>
               <div className={month.leftover < 0 ? "over" : "under"}>

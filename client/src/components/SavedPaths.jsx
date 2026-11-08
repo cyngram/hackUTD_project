@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Bookmark, FolderOpen, Trash2 } from "lucide-react";
 import { api } from "../lib/api";
 import { money } from "../lib/format";
+import { fillMonths, gapsBetween } from "../lib/forecast";
 import ForecastChart from "./ForecastChart";
 
 // Save paths to Tiger Data, reopen them later, and compare their forecasts over time.
@@ -12,13 +13,14 @@ export default function SavedPaths({ customerId, selected, whatIfs, onOpen }) {
   const [compare, setCompare] = useState([]);
   const [name, setName] = useState("");
   const [status, setStatus] = useState("");
+  const [bucket, setBucket] = useState("month");   // "month" or "quarter", grouped by Tiger's time_bucket
 
-  const load = async () => {
+  const load = async (b = bucket) => {
     const list = await api(`/api/customers/${customerId}/saved-paths`);
     setSaved(list);
     const ids = list.slice(0, 3).map((p) => p.id);
     // Forecasts come back from Tiger Data's hypertable, grouped with time_bucket
-    setCompare(ids.length >= 2 ? await api(`/api/saved-paths/compare?ids=${ids.join(",")}&bucket=month`) : []);
+    setCompare(ids.length >= 2 ? await api(`/api/saved-paths/compare?ids=${ids.join(",")}&bucket=${b}`) : []);
   };
 
   useEffect(() => {
@@ -49,6 +51,11 @@ export default function SavedPaths({ customerId, selected, whatIfs, onOpen }) {
     }
   };
 
+  const changeBucket = (b) => {
+    setBucket(b);
+    load(b).catch(() => {});
+  };
+
   const remove = async (id) => {
     await api(`/api/saved-paths/${id}`, { method: "DELETE" }).catch(() => {});
     await load().catch(() => {});
@@ -61,9 +68,11 @@ export default function SavedPaths({ customerId, selected, whatIfs, onOpen }) {
       id: String(series.id),
       label: path?.name ?? `Path ${series.id}`,
       recommended: false,
-      forecast: series.points.map((p) => ({ month: p.month, net: p.net, balance: p.savings, events: [] })),
+      forecast: fillMonths(series.points).map((p) => ({ month: p.month, net: p.net, balance: p.savings, events: [] })),
     };
   });
+
+  const gaps = compareOptions.length >= 2 ? gapsBetween(compareOptions[0], compareOptions[1]) : [];
 
   return (
     <section className="path-box">
@@ -112,8 +121,29 @@ export default function SavedPaths({ customerId, selected, whatIfs, onOpen }) {
 
       {compareOptions.length >= 2 && (
         <div className="saved-compare">
-          <p className="eyebrow">Compare your latest saved paths</p>
+          <div className="saved-compare-head">
+            <p className="eyebrow">Compare your latest saved paths</p>
+            <div className="segmented" role="group" aria-label="Group by">
+              {["month", "quarter"].map((b) => (
+                <button key={b} className={bucket === b ? "active" : ""} onClick={() => changeBucket(b)}>
+                  {b === "month" ? "Month" : "Quarter"}
+                </button>
+              ))}
+            </div>
+          </div>
           <ForecastChart options={compareOptions} selectedId={compareOptions[0].id} months={60} />
+          <div className="stat-grid">
+            {gaps.map((g) => (
+              <div key={g.years}>
+                <small>Gap at {g.years} {g.years === 1 ? "year" : "years"}</small>
+                <strong>{money(g.amount)}</strong>
+                <small>{g.ahead} ahead</small>
+              </div>
+            ))}
+          </div>
+          <p className="tiger-note">
+            {bucket === "month" ? "61 monthly points per path" : "21 quarters per path, averaged with time_bucket"} · Stored in Tiger Data
+          </p>
         </div>
       )}
     </section>

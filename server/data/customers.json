@@ -53,15 +53,15 @@
       },
       {
         "id": "release",
-        "label": "Lease a new Highlander",
+        "label": "Lease a new Camry Hybrid",
         "type": "lease",
-        "leasePayment": 540,
-        "upfront": 2500,
-        "mpg": 24,
-        "insurance": 175,
+        "leasePayment": 380,
+        "upfront": 2000,
+        "mpg": 51,
+        "insurance": 150,
         "maintenance": 0,
         "valueIn5Years": 0,
-        "perk": "Always in a new SUV",
+        "perk": "Right-sized for one driver, with half the gas",
         "serviceEvents": [],
         "startMiles": 0
       },
@@ -150,44 +150,43 @@
       },
       {
         "id": "tradedown",
-        "label": "Trade down to a 2015 Corolla",
+        "label": "Trade down to a 2016 Yaris",
         "type": "finance",
-        "price": 7500,
+        "price": 6500,
         "tradeIn": 3500,
-        "upfront": 1000,
+        "upfront": 800,
         "apr": 9.9,
         "termMonths": 24,
-        "mpg": 32,
-        "insurance": 110,
-        "maintenance": 30,
-        "valueIn5Years": 4000,
-        "perk": "Fewer repairs than a 2012",
+        "mpg": 34,
+        "insurance": 95,
+        "maintenance": 35,
+        "valueIn5Years": 3000,
+        "perk": "Cheapest to own and insure",
         "serviceEvents": [
-          { "label": "New tires", "atMiles": 115000, "amount": 500 }
+          { "label": "New tires", "atMiles": 110000, "amount": 450 }
         ],
-        "startMiles": 105000,
+        "startMiles": 95000,
         "oilInterval": 7500
       },
       {
         "id": "usedbuy",
-        "label": "Buy a used 2019 Corolla",
+        "label": "Buy a used 2017 Prius",
         "type": "finance",
-        "price": 11000,
+        "price": 12500,
         "tradeIn": 3500,
         "upfront": 500,
         "apr": 9.5,
         "termMonths": 48,
-        "mpg": 32,
-        "insurance": 140,
-        "maintenance": 30,
-        "valueIn5Years": 5500,
-        "perk": "Newest and most reliable, but the biggest payment",
+        "mpg": 52,
+        "insurance": 130,
+        "maintenance": 40,
+        "valueIn5Years": 6000,
+        "perk": "Lowest gas bill, but a bigger payment",
         "serviceEvents": [
-          { "label": "New tires", "atMiles": 80000, "amount": 600 },
-          { "label": "60k-mile service", "atMiles": 85000, "amount": 400 }
+          { "label": "New tires", "atMiles": 95000, "amount": 500 }
         ],
-        "startMiles": 70000,
-        "oilInterval": 7500
+        "startMiles": 85000,
+        "oilInterval": 10000
       }
     ],
     "plans": [
@@ -258,23 +257,23 @@
       },
       {
         "id": "tradedown",
-        "label": "Trade down to a used Corolla",
+        "label": "Trade down to a used 2019 Prius",
         "type": "finance",
-        "price": 14000,
+        "price": 16500,
         "tradeIn": 2500,
         "upfront": 0,
         "apr": 8.4,
         "termMonths": 48,
-        "mpg": 32,
-        "insurance": 130,
+        "mpg": 52,
+        "insurance": 135,
         "maintenance": 40,
-        "valueIn5Years": 7500,
-        "perk": "Lower payment and better gas mileage",
+        "valueIn5Years": 8500,
+        "perk": "Built for lots of driving: about half the gas",
         "serviceEvents": [
-          { "label": "New tires", "atMiles": 95000, "amount": 600 },
-          { "label": "100k-mile service", "atMiles": 100000, "amount": 450 }
+          { "label": "New tires", "atMiles": 80000, "amount": 550 },
+          { "label": "100k-mile service", "atMiles": 100000, "amount": 400 }
         ],
-        "startMiles": 80000,
+        "startMiles": 65000,
         "oilInterval": 10000
       },
       {

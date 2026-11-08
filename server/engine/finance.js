@@ -166,7 +166,7 @@ function simulateOption(customer, option, a) {
   // Bigger services (tires, brakes, major services) at their mileage
   const bigServices = (option.serviceEvents || []).map((e) => {
     const month = e.atMiles != null ? monthAt(e.atMiles) : e.month;
-    return { ...e, month, amount: isCovered(month, e.atMiles ?? startMiles) ? 0 : e.amount };
+    return { ...e, month, amount: isCovered(month, e.atMiles ?? startMiles) ? 0 : (Number(e.amount) || 0) };   // a missing amount counts as $0 instead of breaking the math
   });
   const services = [...oilChanges, ...bigServices]
     .filter((e) => e.month >= 1 && e.month <= MONTHS && !(e.atMiles != null && e.atMiles <= startMiles && !usesCurrentCar))

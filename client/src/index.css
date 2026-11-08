@@ -1452,6 +1452,10 @@ main {
 .saved-list small { color: var(--muted); font-size: 12.5px; }
 .saved-list .text-button { display: inline-flex; align-items: center; gap: 6px; }
 .saved-compare { margin-top: 20px; }
+.saved-compare-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.saved-compare .stat-grid { margin-top: 12px; }
+.saved-compare .stat-grid strong { font-size: 18px; }
+.tiger-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 
 /* Milestones */
 .milestone-strip {
@@ -1540,12 +1544,13 @@ main {
 }
 .month-chips button.tight { border-color: var(--sand); color: var(--sand); }
 .month-chips button.active { background: var(--ink); border-color: var(--ink); color: var(--surface); }
-.budget-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.budget-totals div { padding: 14px; border-radius: 14px; background: var(--surface-soft); }
-.budget-totals small { display: block; color: var(--muted); font-size: 12px; }
-.budget-totals strong { font-family: "Manrope"; font-size: 22px; }
-.budget-totals .under strong { color: var(--green); }
-.budget-totals .over strong { color: #b4553a; }
+/* Row of small stat cards (budget totals, saved-path gaps) */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat-grid div { padding: 14px; border-radius: 14px; background: var(--surface-soft); }
+.stat-grid small { display: block; color: var(--muted); font-size: 12px; }
+.stat-grid strong { font-family: "Manrope"; font-size: 22px; }
+.stat-grid .under strong { color: var(--green); }
+.stat-grid .over strong { color: #b4553a; }
 .budget-rows { display: grid; gap: 10px; margin-top: 10px; }
 .budget-row { display: grid; grid-template-columns: minmax(0, 1.4fr) 1fr auto; align-items: center; gap: 12px; font-size: 13px; }
 .budget-bar { height: 6px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
