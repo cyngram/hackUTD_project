@@ -7,7 +7,7 @@ app.use(express.json());    // Parse incoming JSON requests
 
 //figure out the current file's directory
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDir = path.join(__dirname, '..', 'client');
+const clientDir = path.join(__dirname, '..', 'client', 'dist');
 
 //----API routes here--------
 app.get('/api/health', (req, res) => {
