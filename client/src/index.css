@@ -552,6 +552,9 @@ main {
 }
 .finance-card {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;   /* start content at the top instead of centering it */
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 22px;
@@ -1150,3 +1153,180 @@ main {
     transition-duration: 0.01ms !important;
   }
 }
+
+.connected {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 12px;
+}
+
+/* Coming up card */
+.coming-up h2 {
+  font-family: "DM Sans", sans-serif;   /* body font, not the number font */
+  font-size: clamp(24px, 2.8vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  max-width: 24ch;
+}
+.coming-detail {
+  color: #d6dbd8;
+  margin: 0 0 18px;
+  max-width: 46ch;
+}
+.explore-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: white;
+  color: #242525;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Nudges */
+.nudge-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 28px 0 8px;
+}
+.nudge-card {
+  display: flex;
+  gap: 14px;
+  padding: 20px 22px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+.nudge-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+}
+.nudge-text {
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+.treat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.treat-chips button {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+.treat-chips button.active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+}
+
+/* Credit panel tip (replaces the duplicate score number) */
+.credit-tip {
+  margin: 22px 0 0;
+  max-width: 24ch;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Path explorer */
+.detail-panel.path-panel { width: min(880px, 100%); }
+.path-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+.path-card {
+  position: relative;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-soft);
+}
+.path-card.recommended { border: 2px solid var(--blue); background: var(--surface); }
+.pick-badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+  font-size: 12px;
+  font-weight: 700;
+}
+.path-card h3 { margin: 0 0 10px; font-size: 16px; }
+.path-monthly { margin: 0; font-family: "Manrope"; font-size: 28px; font-weight: 700; }
+.path-monthly span { color: var(--muted); font-size: 14px; font-weight: 500; }
+.path-meta { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+.path-why { margin: 0; font-size: 13px; line-height: 1.5; }
+.path-perk { margin: 8px 0 0; color: var(--green); font-size: 13px; }
+.path-ok, .path-warn { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; font-size: 13px; }
+.path-ok { color: var(--green); }
+.path-warn { color: #b4553a; }
+
+.panel-block {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+.forecast { margin: 10px 0 0; }
+.forecast svg { width: 100%; height: auto; }
+.forecast-grid { stroke: var(--line); }
+.forecast-zero { stroke: var(--muted); stroke-dasharray: 3 3; }
+.forecast-label { fill: var(--muted); font-size: 11px; }
+.forecast-legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px; color: var(--ink); font-size: 13px; }
+.forecast-legend i { display: inline-block; width: 18px; height: 10px; margin-right: 8px; vertical-align: middle; border-radius: 3px; }
+
+.what-if {
+  display: grid;
+  grid-template-columns: 220px 1fr 90px;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.what-if input { accent-color: var(--blue); }
+.what-if output { text-align: right; font-weight: 600; }
+
+.next-step {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 18px 0 8px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+}
+.next-step div { flex: 1; }
+.next-step p { margin: 4px 0 0; font-size: 14px; }
+
+@media (max-width: 640px) {
+  .what-if { grid-template-columns: 1fr; }
+  .what-if output { text-align: left; }
+}
+
+/* Path explorer fixes: unsquish the next-step button, easier-to-grab sliders */
+.next-step .primary-button { width: auto; flex: 0 0 auto; }
+.what-if input[type="range"] { height: 28px; cursor: grab; }
+.what-if input[type="range"]:active { cursor: grabbing; }
+

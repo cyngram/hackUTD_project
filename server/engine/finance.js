@@ -143,20 +143,49 @@ function simulateOption(customer, option, a) {
   const runningCosts = (option.insurance + option.maintenance + gas) * MONTHS;
   const cashOut =
     (option.upfront || 0) + carPayment * paymentMonths + runningCosts;
-  const netCost = cashOut + (option.tradeIn || 0) - (option.valueIn5Years || 0);
+  // "keep" also uses up the car you already own, so count its value like a trade-in
+  const netCost =
+    cashOut + (option.tradeIn || 0) + (option.type === "keep" ? option.valueToday || 0 : 0) - (option.valueIn5Years || 0);
 
   // Stress test: surprise bill + months without income come out of savings
   const stressHit = a.surpriseRepair + a.incomeGapMonths * monthlyExpenses;
   const savingsAfterStress = savingsAfter - stressHit;
 
-  const forecast = [{ month: 0, balance: round(savingsAfter) }]; // start at "today"
-  let balance = savingsAfter;
+  // ---- What you'd own over time: savings + car value - what you still owe ----
+  const valueToday = option.valueToday ?? option.price ?? 0;   // a new car is worth its price on day one
+  const valueLater = option.valueIn5Years ?? 0;
+  const carValueAt = (month) => {
+    const t = Math.min(month / MONTHS, 1);
+    return valueLater + (valueToday - valueLater) * Math.pow(1 - t, 1.5);   // cars lose value fastest early on
+  };
+  const monthlyRate = (option.apr || 0) / 100 / 12;
+  const pattern = customer.spendingPattern;   // 12 numbers (Jan..Dec) from their bank history (optional)
+  const startMonth = new Date().getMonth();
+
+  let balance = savingsAfter;                 // cash in savings
+  let loanBalance = financed;                 // what's still owed on the car
+  const point = (month) => ({
+    month,
+    balance: round(balance),
+    carValue: round(carValueAt(month)),
+    loanBalance: round(loanBalance),
+    net: round(balance + carValueAt(month) - loanBalance),   // "what you'd own"
+  });
+
+  const forecast = [point(0)];
   for (let month = 1; month <= MONTHS; month += 1) {
     const monthlyIncome = month <= a.incomeGapMonths ? 0 : income;
-    const payment = month <= paymentMonths ? carPayment : 0; // loan ends → payment stops
-    const monthlyCost = baseExpenses + (carMonthly - carPayment) + payment + cardMin + (month === 1 ? a.surpriseRepair : 0);
+    const payment = month <= paymentMonths ? carPayment : 0;
+    const seasonal = pattern ? pattern[(startMonth + month) % 12] : 1;   // e.g. December runs higher
+    const monthlyCost =
+      baseExpenses + customer.otherExpenses * (seasonal - 1) +   // everyday spending, adjusted by season
+      (carMonthly - carPayment) + payment + cardMin +
+      (month === 1 ? a.surpriseRepair : 0);
     balance += monthlyIncome - monthlyCost;
-    forecast.push({ month, balance: round(balance) });
+    if (option.type === "finance" && month <= paymentMonths) {
+      loanBalance = Math.max(0, loanBalance * (1 + monthlyRate) - carPayment);   // interest first, then payment
+    }
+    forecast.push(point(month));
   }
 
   //when saving more than goal
@@ -300,46 +329,70 @@ export function overview(customer) {
         ? "Paid off"
         : "Financed";
 
+  // Each item says what it IS (kind), so the frontend can pick an icon without guessing.
+  const accounts = [
+    { kind: "checking", label: "Checking", amount: round(customer.checking || 0) },
+    { kind: "savings", label: "Savings", amount: round(customer.savings) },
+    {
+      kind: "credit",
+      label: "Credit card balance",
+      amount: round(customer.cardBalance),
+      note: `of ${money(customer.cardLimit)} limit`,
+    },
+  ];
+  const home = [
+    { kind: "housing", label: housingLabel, amount: round(customer.housing), note: "per month" },
+    { kind: "utilities", label: "Utilities", amount: round(customer.utilities), note: "per month" },
+  ];
+  const vehicleItems = [
+    {
+      kind: "payment",
+      label: v.type === "lease" ? "Lease payment" : "Car payment",
+      amount: round(v.payment),
+      note: "per month",
+    },
+    { kind: "insurance", label: "Insurance", amount: round(v.insurance), note: "per month" },
+    { kind: "gas", label: "Gas", amount: round(gas), note: "per month" },
+  ];
+  if (v.maintenance > 0) {
+    vehicleItems.push({ kind: "maintenance", label: "Maintenance", amount: round(v.maintenance), note: "per month" });
+  }
+  const sum = (items) => items.reduce((total, item) => total + item.amount, 0);
+
   return {
     customerId: customer.id,
     name: customer.name,
     monthlyIncome: round(customer.monthlyIncome),
     monthlyExpenses: round(monthlyExpenses),
-    accounts: [
-      { label: "Checking", amount: round(customer.checking || 0) },
-      { label: "Savings", amount: round(customer.savings) },
-      {
-        label: "Credit card balance",
-        amount: round(customer.cardBalance),
-        note: `of ${money(customer.cardLimit)} limit`,
-      },
-    ],
-    home: [
-      {
-        label: housingLabel,
-        amount: round(customer.housing),
-        note: "per month",
-      },
-      {
-        label: "Utilities",
-        amount: round(customer.utilities),
-        note: "per month",
-      },
-    ],
+    accounts,
+    home,
     vehicle: {
       model: v.model,
       status: vehicleStatus,
       mileage: v.mileage,
-      items: [
-        {
-          label: v.type === "lease" ? "Lease payment" : "Car payment",
-          amount: round(v.payment),
-          note: "per month",
-        },
-        { label: "Insurance", amount: round(v.insurance), note: "per month" },
-        { label: "Gas", amount: round(gas), note: "per month" },
-      ],
+      items: vehicleItems,
     },
+    // The 3 "Everything in one place" cards, ready to display
+    sections: [
+      {
+        id: "accounts", title: "Accounts", eyebrow: "Your money", icon: "wallet", accent: "blue",
+        total: round(customer.checking || 0) + round(customer.savings),   // cash only (card balance is owed)
+        unit: "",
+        items: accounts,
+      },
+      {
+        id: "home", title: "Home", eyebrow: "Your place", icon: "home", accent: "sand",
+        total: sum(home),
+        unit: "/mo",
+        items: home,
+      },
+      {
+        id: "vehicles", title: "Vehicles", eyebrow: "Your ride", icon: "car", accent: "green",
+        total: sum(vehicleItems),
+        unit: "/mo",
+        items: [{ kind: "car", label: v.model, amount: null, note: vehicleStatus }, ...vehicleItems],
+      },
+    ],
     creditScore: { value: customer.creditScore, ...credit },
     breakdown: {
       housing: round(customer.housing),
