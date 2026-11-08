@@ -14,10 +14,11 @@ Rules:
 - When giving advice: give ONE clear recommendation, the main reason, and one or two other options with their trade-offs.
 - End with a short follow-up question such as "Want to explore other options?"
 - Be warm and honest. If every option has a risk, say so kindly.
+- For "can I afford" questions, use the AFFORDABILITY CHECK in the data: answer clearly (yes / it's tight / not yet), say what it does to their savings cushion, then give exactly three ideas: (1) the full purchase, (2) a scaled-down version, (3) saving up first and when they could buy it.
 - This is a demo with made-up customers. Do not ask for personal or account information.`;
 
 // Turn the engine output into a compact text summary for the model
-function buildData(customer, overview, sim) {
+function buildData(customer, overview, sim, afford) {
   const lines = [];
   lines.push(`Customer: ${customer.name}, ${customer.age}. ${customer.household}. ${customer.story}`);
   lines.push(`Monthly income $${overview.monthlyIncome}, monthly bills $${overview.monthlyExpenses}.`);
@@ -37,6 +38,14 @@ function buildData(customer, overview, sim) {
     );
   }
   lines.push(`Recommendation: ${sim.recommendation.headline}. Next step: ${sim.recommendation.nextStep}`);
+  if (afford) {
+    lines.push(
+      `AFFORDABILITY CHECK for a $${afford.amount} purchase from savings: verdict "${afford.verdict}". ` +
+      `Savings go from $${afford.savingsBefore} to $${afford.savingsAfter}; safety cushion from ${afford.runwayBefore} to ${afford.runwayAfter} months of bills. ` +
+      (afford.monthsToRecover !== null ? `Back to today's savings in about ${afford.monthsToRecover} months (${afford.recoverBy}). ` : '') +
+      (afford.saveFirstMonths ? `To buy it and still keep a 3-month cushion, save for about ${afford.saveFirstMonths} months (${afford.saveFirstBy}).` : 'They can buy it and still keep a 3-month cushion.')
+    );
+  }
   return lines.join('\n');
 }
 
@@ -51,10 +60,25 @@ function fallbackAnswer(customer, sim) {
     `Other options: ${alt} Next step: ${sim.recommendation.nextStep} Want to explore other options?`;
 }
 
+// Backup answer for "can I afford it?" questions (used if Gemini is unavailable)
+function fallbackAfford(customer, a) {
+  const money = (n) => `$${Number(n).toLocaleString('en-US')}`;
+  const opener = a.verdict === 'comfortable' ? 'Yes, you can afford it.'
+    : a.verdict === 'tight' ? "You can, but it's tight."
+    : 'Not yet, but you can get there.';
+  const later = a.saveFirstMonths ? `save for about ${a.saveFirstMonths} months and buy it in ${a.saveFirstBy} with your cushion intact` : 'buy it now and still keep a 3-month cushion';
+  return `${opener} Spending ${money(a.amount)} takes your savings from ${money(a.savingsBefore)} to ${money(a.savingsAfter)}, ` +
+    `which covers ${a.runwayAfter} months of bills instead of ${a.runwayBefore}. Three ideas: ` +
+    `1) Go for the full ${money(a.amount)}${a.recoverBy ? ` and you'd be back to today's savings by ${a.recoverBy}` : ''}. ` +
+    `2) Scale it down to about ${money(Math.round(a.amount / 2 / 50) * 50)} to protect your cushion. ` +
+    `3) Or ${later}. Want to explore other options?`;
+}
+
 // history = [{ role: 'user' | 'cosmo', text: '...' }]
-export async function askCosmo({ customer, overview, sim, message, history = [] }) {
+export async function askCosmo({ customer, overview, sim, message, history = [], afford = null }) {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return { reply: fallbackAnswer(customer, sim), source: 'fallback' };
+  const backup = afford ? fallbackAfford(customer, afford) : fallbackAnswer(customer, sim);
+  if (!key) return { reply: backup, source: 'fallback' };
 
   const contents = [
     ...history.slice(-8).map((m) => ({
@@ -71,7 +95,7 @@ export async function askCosmo({ customer, overview, sim, message, history = [] 
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${RULES}\n\nDATA:\n${buildData(customer, overview, sim)}` }] },
+          system_instruction: { parts: [{ text: `${RULES}\n\nDATA:\n${buildData(customer, overview, sim, afford)}` }] },
           contents,
         }),
         signal: AbortSignal.timeout(20000),
@@ -79,13 +103,13 @@ export async function askCosmo({ customer, overview, sim, message, history = [] 
     );
     if (!res.ok) {
       console.error('Gemini error', res.status, (await res.text()).slice(0, 300));
-      return { reply: fallbackAnswer(customer, sim), source: 'fallback' };
+      return { reply: backup, source: 'fallback' };
     }
     const data = await res.json();
     const reply = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim();
-    return reply ? { reply, source: 'gemini' } : { reply: fallbackAnswer(customer, sim), source: 'fallback' };
+    return reply ? { reply, source: 'gemini' } : { reply: backup, source: 'fallback' };
   } catch (err) {
     console.error('Gemini request failed:', err.message);
-    return { reply: fallbackAnswer(customer, sim), source: 'fallback' };
+    return { reply: backup, source: 'fallback' };
   }
 }

@@ -73,12 +73,12 @@
     ]
   },
   {
-    "id": "carter",
-    "name": "Jordan & Sam Carter",
-    "shortName": "the Carters",
+    "id": "jordan",
+    "name": "Jordan Carter",
+    "shortName": "Jordan",
     "age": 38,
-    "household": "Family of four, homeowners",
-    "story": "Two kids and a paid-off 2016 Camry at 112,000 miles. It needs a big service soon.",
+    "household": "Homeowner, two kids",
+    "story": "Homeowner with two kids and a paid-off 2016 Camry at 112,000 miles. It needs a big service soon.",
     "monthlyIncome": 9500,
     "housingType": "mortgage",
     "housing": 2400,

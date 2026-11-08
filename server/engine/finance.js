@@ -366,3 +366,118 @@ function nextStepFor(option) {
     return "Ask your dealer about current lease offers.";
   return "Get a trade-in appraisal and check your pre-approved rate.";
 }
+
+// ---------- "Coming up" + nudges for the home screen ----------
+function monthName(monthsFromNow) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + monthsFromNow);
+  return d.toLocaleString('en-US', { month: 'long' });   // e.g. "February"
+}
+
+export function moments(customer) {
+  const v = customer.vehicle;
+  const carName = v.model.split(' ').slice(-1)[0];       // "2023 Toyota Corolla" → "Corolla"
+  const today = overview(customer);
+  const leftover = today.monthlyIncome - today.monthlyExpenses;
+
+  // How much the best path saves vs the next best (for the headline)
+  const sim = simulate(customer);
+  const costs = sim.options.map((o) => o.fiveYear.netCost).sort((x, y) => x - y);
+  const savesUpTo = costs.length > 1 ? costs[1] - costs[0] : 0;
+  const pathsText = `You have ${sim.options.length} paths. One could save you about ${money(savesUpTo)} over 5 years.`;
+
+  // 1) The upcoming moment
+  const comingUp = [];
+  if (v.type === 'lease' && v.monthsLeft <= 6) {
+    comingUp.push({
+      when: `In ${v.monthsLeft} months`,
+      title: `Your ${carName} lease ends in ${monthName(v.monthsLeft)}`,
+      detail: pathsText,
+    });
+  } else if (v.mileage >= 100000) {
+    comingUp.push({
+      when: 'Soon',
+      title: `Your ${carName} is due for its ${Math.ceil(v.mileage / 10000) * 10}k service`,
+      detail: pathsText,
+    });
+  }
+
+  // 2) Nudges based on current trends
+  const nudges = [];
+  const runway = customer.savings / today.monthlyExpenses;
+  const target = runway < 3 ? 3 : 6;                      // next emergency-fund milestone
+  if (runway < 6 && leftover > 0) {
+    const months = Math.ceil((target * today.monthlyExpenses - customer.savings) / leftover);
+    nudges.push({
+      type: 'trend',
+      title: 'If your trend holds',
+      text: target === 3
+        ? `You'll reach a 3-month emergency fund by ${monthName(months)}. Then it's treat-yourself time.`
+        : `You'll reach a 6-month emergency fund by ${monthName(months)}.`,
+    });
+  } else {
+    nudges.push({
+      type: 'trend',
+      title: 'Strong cushion',
+      text: `Your savings cover ${runway.toFixed(1)} months of bills. Nice work.`,
+    });
+  }
+  // Treat yourself: only when the safety cushion is 3+ months (never encourage spending money you need)
+  if (runway >= 3 && leftover > 0) {
+    const budget = Math.min(3000, Math.floor((leftover * 0.3 * 6) / 100) * 100);   // capped at $3,000
+    const roundTo100 = (n) => Math.round(n / 100) * 100;
+    nudges.push({
+      type: 'treat',
+      title: "You've earned it",
+      text: `You've worked hard, ${customer.shortName || customer.name}. You have room for about ${money(budget)} to treat yourself without touching your safety cushion.`,
+      budget,
+      ideas: [
+        { label: 'A trip', amount: budget },
+        { label: 'Something new', amount: roundTo100(budget * 0.5) },
+        { label: 'A night out', amount: roundTo100(budget * 0.2) },
+        { label: 'Save it', amount: 0 },
+      ],
+    });
+  }
+
+  return {
+    customerId: customer.id,
+    comingUp,
+    nudges,
+    cosmoPrompt: 'Considering my current state, can I afford ',   // suggested prompt for the chat box
+  };
+}
+
+// ---------- "Can I afford it?" check (used by Cosmo) ----------
+// Treats the purchase as a one-time expense paid from savings today.
+export function affordability(customer, amount) {
+  const today = overview(customer);
+  const expenses = today.monthlyExpenses;
+  const leftover = today.monthlyIncome - expenses;
+  const savingsAfter = customer.savings - amount;
+  const runwayBefore = customer.savings / expenses;
+  const runwayAfter = savingsAfter / expenses;
+
+  let verdict = 'not yet';
+  if (savingsAfter >= 0 && runwayAfter >= 3) verdict = 'comfortable';
+  else if (savingsAfter >= 0 && runwayAfter >= 1.5) verdict = 'tight';
+
+  const monthsToRecover = leftover > 0 ? Math.ceil(amount / leftover) : null;
+  // If not comfortable: how long to save so you can buy it AND keep a 3-month cushion
+  const saveFirstMonths = leftover > 0
+    ? Math.max(0, Math.ceil((amount + 3 * expenses - customer.savings) / leftover))
+    : null;
+
+  return {
+    amount: round(amount),
+    verdict,
+    savingsBefore: round(customer.savings),
+    savingsAfter: round(savingsAfter),
+    runwayBefore: Number(runwayBefore.toFixed(1)),
+    runwayAfter: Number(runwayAfter.toFixed(1)),
+    monthsToRecover,
+    recoverBy: monthsToRecover !== null ? monthName(monthsToRecover) : null,
+    saveFirstMonths,
+    saveFirstBy: saveFirstMonths !== null ? monthName(saveFirstMonths) : null,
+  };
+}

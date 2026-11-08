@@ -7,7 +7,7 @@ The two demo customers (for the picker cards).
 Useful fields: `id`, `name`, `shortName`, `age`, `household`, `story`, `vehicle.model`.
 
 ## GET /api/customers/:id/overview
-"Today" dashboard for one customer (`maria` or `carter`). Matches the dashboard boxes:
+"Today" dashboard for one customer (`maria` or `jordan`). Matches the dashboard boxes:
 - `accounts`: list of { label, amount, note? }  -> Accounts box (Checking, Savings, Credit card)
 - `home`: list of { label, amount, note }        -> Home box (Rent or Mortgage, Utilities)
 - `vehicle`: { model, status, mileage, items: [{ label, amount, note }] } -> Vehicles box

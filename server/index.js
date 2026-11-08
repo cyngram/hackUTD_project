@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url'; 
 import fs from 'fs';
-import { simulate, overview } from './engine/finance.js';
+import { simulate, overview, moments, affordability } from './engine/finance.js';
 import { askCosmo } from './engine/cosmo.js';
 
 const app = express();
@@ -30,9 +30,28 @@ function cleanAssumptions(assumptions) {
   return clean;
 }
 
+// Find a dollar amount in a chat message: "$1,200", "$2k", "1500 dollars", "3k"
+function findAmount(message) {
+  const text = String(message).toLowerCase();
+  const m =
+    text.match(/\$\s?(\d[\d,]*(?:\.\d+)?)\s?(k)?/) ||
+    text.match(/(\d[\d,]*(?:\.\d+)?)\s?(k|dollars|bucks)\b/);
+  if (!m) return null;
+  let n = Number(m[1].replace(/,/g, ''));
+  if (m[2] === 'k') n *= 1000;
+  return n >= 20 && n <= 1000000 ? n : null;
+}
+
 // List of customers (for the picker cards)
 app.get('/api/customers', (req, res) => {
   res.json(loadCustomers());
+});
+
+// "Coming up" moment + nudges for the home screen
+app.get('/api/customers/:id/moments', (req, res) => {
+  const customer = loadCustomers().find((c) => c.id === req.params.id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  res.json(moments(customer));
 });
 
 // "Today" picture for one customer: monthly breakdown + health scores
@@ -61,7 +80,9 @@ app.post('/api/chat', async (req, res) => {
   if (!message || !String(message).trim()) return res.status(400).json({ error: 'Message is empty' });
 
   const sim = simulate(customer, cleanAssumptions(assumptions));
-  const result = await askCosmo({ customer, overview: overview(customer), sim, message, history });
+  const amount = findAmount(message);                       // e.g. "can I afford a $1,200 laptop?" -> 1200
+  const afford = amount ? affordability(customer, amount) : null;
+  const result = await askCosmo({ customer, overview: overview(customer), sim, message, history, afford });
   res.json(result);
 });
 
