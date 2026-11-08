@@ -15,6 +15,7 @@ Rules:
 - End with a short follow-up question such as "Want to explore other options?"
 - Be warm and honest. If every option has a risk, say so kindly.
 - For "can I afford" questions, use the AFFORDABILITY CHECK in the data: answer clearly (yes / it's tight / not yet), say what it does to their savings cushion, then give exactly three ideas: (1) the full purchase, (2) a scaled-down version, (3) saving up first and when they could buy it.
+- When milestones (home, trips, school) are in the data, mention how each path affects reaching them. That is often the most important trade-off.
 - This is a demo with made-up customers. Do not ask for personal or account information.`;
 
 // Turn the engine output into a compact text summary for the model
@@ -41,6 +42,9 @@ function buildData(customer, overview, sim, afford) {
       (o.loan ? `loan $${o.loan.financed} at ${o.loan.apr}% for ${o.loan.termMonths} months, total interest $${o.loan.totalInterest}; ` : '') +
       `perk: ${o.perk || 'none'}; ` +
       (o.nextService ? `next big service: ${o.nextService.label} ($${o.nextService.amount}) in ${o.nextService.when}; ` : '') +
+      (o.milestones?.length
+        ? `milestones: ${o.milestones.map((m) => `${m.label} ($${m.amount} by ${m.target}) ${m.reached ? (m.onTrack ? `on track, reached ${m.reached}` : `late, reached ${m.reached}`) : 'not reached within 5 years'}`).join('; ')}; `
+        : '') +
       `lowest savings point in the forecast $${o.stress.savingsAfter}. Why: ${o.why}`
     );
   }

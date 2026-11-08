@@ -6,6 +6,10 @@ import {
   Bot,
   CarFront,
   CheckCircle2,
+  Flag,
+  GraduationCap,
+  Home,
+  Plane,
   Plus,
   RefreshCw,
   Sparkles,
@@ -15,6 +19,7 @@ import {
 import { api } from "../lib/api";
 import { money } from "../lib/format";
 import ForecastChart, { colorFor } from "./ForecastChart";
+import SavedPaths from "./SavedPaths";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const PATH_ICONS = { finance: CarFront, lease: RefreshCw, keep: Wrench };
@@ -38,6 +43,24 @@ const WHAT_IFS = [
   { key: "surpriseRepair", label: "One-time expense", min: () => 0, max: () => 5000, step: 100, show: (v) => money(v) },
 ];
 
+// Milestones: life goals on any path (not just the car)
+const MILESTONE_KINDS = [
+  { value: "home", label: "Home", icon: Home },
+  { value: "trip", label: "Trip", icon: Plane },
+  { value: "opportunity", label: "New opportunity", icon: GraduationCap },
+  { value: "goal", label: "Other goal", icon: Flag },
+];
+const milestoneIcon = (kind) => (MILESTONE_KINDS.find((k) => k.value === kind) ?? MILESTONE_KINDS[3]).icon;
+const THIS_YEAR = new Date().getFullYear();
+const emptyMilestone = () => ({ label: "", kind: "home", amount: "", month: new Date().getMonth(), year: THIS_YEAR + 2 });
+
+// How a milestone is doing on a path, in plain words
+function milestoneStatus(m) {
+  if (m.onTrack) return { ok: true, text: `On track · ${m.reached}` };
+  if (m.reached) return { ok: false, text: `Late · ${m.reached}` };
+  return { ok: false, text: "Not within 5 years" };
+}
+
 const emptyDraft = () => ({ label: "", amount: "", kind: "expense", repeat: "once", month: (new Date().getMonth() + 1) % 12 });
 
 export default function PathExplorer({ customerId, comingUp, treat, baseIncome, initialSim, onClose, onAskCosmo }) {
@@ -50,6 +73,8 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
   const [tab, setTab] = useState("whatifs");
   const [draft, setDraft] = useState(emptyDraft);
   const [draftError, setDraftError] = useState("");
+  const [milestoneDraft, setMilestoneDraft] = useState(emptyMilestone);
+  const [milestoneError, setMilestoneError] = useState("");
 
   // Start at the top of the page (braces matter: an effect may only return a cleanup function)
   useEffect(() => {
@@ -94,6 +119,22 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
     ]);
     setDraft(emptyDraft());
     setDraftError("");
+  };
+
+  const milestones = whatIfs.milestones ?? sim?.assumptions.milestones ?? [];
+  const setMilestones = (next) => setWhatIfs((prev) => ({ ...prev, milestones: next }));
+
+  const addMilestone = (e) => {
+    e.preventDefault();
+    const amount = Number(milestoneDraft.amount);
+    const now = new Date();
+    const targetMonth = (Number(milestoneDraft.year) - now.getFullYear()) * 12 + (Number(milestoneDraft.month) - now.getMonth());
+    if (!milestoneDraft.label.trim()) return setMilestoneError("Give your milestone a name.");
+    if (!amount || amount <= 0) return setMilestoneError("Enter an amount above $0.");
+    if (targetMonth < 1 || targetMonth > 60) return setMilestoneError("Pick a date within the next 5 years.");
+    setMilestones([...milestones, { label: milestoneDraft.label.trim(), kind: milestoneDraft.kind, amount, targetMonth }]);
+    setMilestoneDraft(emptyMilestone());
+    setMilestoneError("");
   };
 
   const selected = sim?.options.find((o) => o.id === (selectedId ?? sim.recommendation.optionId));
@@ -154,6 +195,11 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
                         ? `Next service: ${o.nextService.label.toLowerCase()}, ${o.nextService.when} · ${money(o.nextService.amount)}`
                         : "No big service expected"}
                     </small>
+                    {o.milestones.length > 0 && (
+                      <small>
+                        {o.milestones.filter((m) => m.onTrack).length} of {o.milestones.length} milestones on track
+                      </small>
+                    )}
                     {!o.stress.holdsUp && (
                       <small className="path-dip">
                         <AlertTriangle size={13} /> Savings dip below $0
@@ -187,6 +233,23 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
             </div>
             <ForecastChart options={sim.options} selectedId={selected.id} months={range} />
             <p className="path-why">{selected.why}</p>
+            {selected.milestones.length > 0 && (
+              <div className="milestone-strip">
+                {selected.milestones.map((m) => {
+                  const Icon = milestoneIcon(m.kind);
+                  const status = milestoneStatus(m);
+                  return (
+                    <div key={m.label} className={`milestone-chip ${status.ok ? "ok" : "late"}`}>
+                      <Icon size={16} />
+                      <span>
+                        <strong>{m.label}</strong>
+                        <small>{money(m.amount)} by {m.target} · {status.text}</small>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {sim.smallShift && (
               <div className="small-shift">
                 <Sparkles size={18} />
@@ -204,10 +267,63 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
               <div className="segmented" role="tablist">
                 <button className={tab === "whatifs" ? "active" : ""} onClick={() => setTab("whatifs")}>What-ifs</button>
                 <button className={tab === "plans" ? "active" : ""} onClick={() => setTab("plans")}>Plans</button>
+                <button className={tab === "milestones" ? "active" : ""} onClick={() => setTab("milestones")}>Milestones</button>
               </div>
             </div>
 
-            {tab === "whatifs" ? (
+            {tab === "milestones" ? (
+              <div>
+                <ul className="plan-list">
+                  {selected.milestones.map((m) => {
+                    const Icon = milestoneIcon(m.kind);
+                    const status = milestoneStatus(m);
+                    return (
+                      <li key={m.label} className="milestone-item">
+                        <span className="plan-name"><Icon size={15} /> {m.label}</span>
+                        <span className="plan-when">{money(m.amount)} by {m.target}</span>
+                        <span className={status.ok ? "plan-in" : "plan-late"}>{status.text}</span>
+                        <button
+                          className="icon-button"
+                          aria-label={`Remove ${m.label}`}
+                          onClick={() => setMilestones(milestones.filter((x) => x.label !== m.label))}
+                        >
+                          <X size={16} />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <form className="plan-form milestone-form" onSubmit={addMilestone}>
+                  <input
+                    aria-label="Milestone name"
+                    placeholder="Home down payment"
+                    value={milestoneDraft.label}
+                    onChange={(e) => { setMilestoneDraft({ ...milestoneDraft, label: e.target.value }); setMilestoneError(""); }}
+                  />
+                  <select aria-label="Kind" value={milestoneDraft.kind} onChange={(e) => setMilestoneDraft({ ...milestoneDraft, kind: e.target.value })}>
+                    {MILESTONE_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+                  </select>
+                  <input
+                    aria-label="Amount to save"
+                    type="number"
+                    min="1"
+                    placeholder="20000"
+                    value={milestoneDraft.amount}
+                    onChange={(e) => { setMilestoneDraft({ ...milestoneDraft, amount: e.target.value }); setMilestoneError(""); }}
+                  />
+                  <select aria-label="Target month" value={milestoneDraft.month} onChange={(e) => setMilestoneDraft({ ...milestoneDraft, month: e.target.value })}>
+                    {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                  </select>
+                  <select aria-label="Target year" value={milestoneDraft.year} onChange={(e) => setMilestoneDraft({ ...milestoneDraft, year: e.target.value })}>
+                    {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={THIS_YEAR + n}>{THIS_YEAR + n}</option>)}
+                  </select>
+                  <button type="submit" className="primary-button">
+                    <Plus size={16} /> Add milestone
+                  </button>
+                </form>
+                {milestoneError && <p className="form-error">{milestoneError}</p>}
+              </div>
+            ) : tab === "whatifs" ? (
               <div className="what-if-grid">
                 {WHAT_IFS.map((w) => {
                   const value = whatIfs[w.key] ?? sim.assumptions[w.key];   // follow your finger immediately
@@ -286,6 +402,17 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
               </div>
             )}
           </section>
+
+          <SavedPaths
+            customerId={customerId}
+            selected={selected}
+            whatIfs={whatIfs}
+            onOpen={(path) => {
+              setWhatIfs(path.assumptions ?? {});   // restore the saved what-ifs and plans
+              setSelectedId(path.optionId);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
 
           <section className="next-step">
             <CheckCircle2 size={22} />

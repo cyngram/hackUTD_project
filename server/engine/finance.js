@@ -12,6 +12,7 @@ const DEFAULTS = {
   goalMonths: 0,
   monthlyIncome: null,   // what-if: projected monthly income (null = their real income)
   plans: null,           // their planned events (null = the plans saved for this customer)
+  milestones: null,      // life goals: home, trips, new opportunities (null = their saved milestones)
 };
 
 const YEARS = 5;
@@ -205,6 +206,27 @@ function simulateOption(customer, option, a) {
   // Does savings ever drop below $0? (the honest version of "does this path hold up")
   const lowPoint = forecast.reduce((low, p) => (p.balance < low.balance ? p : low), forecast[0]);
 
+  // Milestones (home down payment, a big trip, grad school…), saved up in order of their target dates.
+  // Each one needs everything before it PLUS its own amount, so two goals never count the same dollars.
+  // Progress = new savings on top of what they have today (today's savings stay as their cushion).
+  let needed = 0;
+  const milestones = [...a.milestones]
+    .sort((x, y) => x.targetMonth - y.targetMonth)
+    .map((m) => {
+      needed += m.amount;
+      const hit = forecast.find((p) => p.balance - customer.savings >= needed);
+      return {
+        label: m.label,
+        kind: m.kind || "goal",
+        amount: m.amount,
+        targetMonth: m.targetMonth,
+        target: monthYear(m.targetMonth),
+        reachedMonth: hit ? hit.month : null,      // null = not within 5 years
+        reached: hit ? monthYear(hit.month) : null,
+        onTrack: hit ? hit.month <= m.targetMonth : false,
+      };
+    });
+
   //when saving more than goal
   let goal = null;
   if (a.goalAmount > 0) {
@@ -249,6 +271,7 @@ function simulateOption(customer, option, a) {
     health,
     forecast,
     goal,
+    milestones,
     nextService: services[0] ? { ...services[0], when: monthYear(services[0].month) } : null,
     stress: {
       savingsAfter: lowPoint.balance,          // lowest savings balance in the forecast
@@ -263,6 +286,7 @@ export function simulate(customer, assumptions = {}) {
   const a = { ...DEFAULTS, ...assumptions };
   a.monthlyIncome = a.monthlyIncome ?? customer.monthlyIncome;
   a.plans = a.plans ?? customer.plans ?? [];
+  a.milestones = a.milestones ?? customer.milestones ?? [];
   const results = customer.options.map((o) => simulateOption(customer, o, a));
 
   // Recommendation: lowest 5-year true cost among options you can afford monthly.

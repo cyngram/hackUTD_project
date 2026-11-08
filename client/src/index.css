@@ -1586,3 +1586,65 @@ main {
 .chat-form button:disabled { opacity: 0.6; }
 .path-page { padding-bottom: 140px; }   /* room so the Cosmo button never covers the last card */
 
+/* Saved paths (Tiger Data) */
+.save-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.save-form input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 13px;
+}
+.save-form .primary-button { width: auto; }
+.save-status { color: var(--muted); font-size: 13px; }
+.saved-list { margin: 16px 0 0; padding: 0; list-style: none; }
+.saved-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.saved-list li > div { display: grid; gap: 3px; flex: 1; min-width: 0; }
+.saved-list strong { font-size: 14px; }
+.saved-list small { color: var(--muted); font-size: 12.5px; }
+.saved-list .text-button { display: inline-flex; align-items: center; gap: 6px; }
+.saved-compare { margin-top: 20px; }
+
+/* Milestones */
+.milestone-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.milestone-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.milestone-chip span { display: grid; gap: 2px; }
+.milestone-chip strong { font-size: 13.5px; }
+.milestone-chip small { color: var(--muted); font-size: 12.5px; }
+.milestone-chip.ok svg { color: var(--green); }
+.milestone-chip.late svg { color: var(--sand); }
+.milestone-item .plan-name { display: inline-flex; align-items: center; gap: 8px; }
+.plan-late { color: var(--sand); font-weight: 600; }
+.milestone-form { grid-template-columns: 2fr 1.2fr 1fr 1.1fr 0.9fr auto; }
+@media (max-width: 720px) {
+  .milestone-form { grid-template-columns: 1fr 1fr; }
+}
+

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { simulate, overview, moments, affordability } from './engine/finance.js';
 import { askCosmo } from './engine/cosmo.js';
+import { dbReady, query, setupDatabase } from './db.js';
 
 const app = express();
 app.use(express.json());    // Parse incoming JSON requests
@@ -41,6 +42,22 @@ function cleanAssumptions(assumptions) {
         plan.label &&
         Number.isFinite(plan.amount) && Math.abs(plan.amount) <= 100000 &&
         Number.isInteger(plan.month) && plan.month >= 0 && plan.month <= 11);
+  }
+  // Milestones the user added/edited: [{ label, kind, amount, targetMonth (months from now, 1-60) }]
+  if (Array.isArray(assumptions?.milestones)) {
+    const KINDS = ['home', 'trip', 'opportunity', 'goal'];
+    clean.milestones = assumptions.milestones
+      .slice(0, 8)
+      .map((m) => ({
+        label: String(m?.label ?? '').trim().slice(0, 40),
+        kind: KINDS.includes(m?.kind) ? m.kind : 'goal',
+        amount: Number(m?.amount),
+        targetMonth: Number(m?.targetMonth),
+      }))
+      .filter((m) =>
+        m.label &&
+        Number.isFinite(m.amount) && m.amount > 0 && m.amount <= 1000000 &&
+        Number.isInteger(m.targetMonth) && m.targetMonth >= 1 && m.targetMonth <= 60);
   }
   return clean;
 }
@@ -101,6 +118,113 @@ app.post('/api/chat', async (req, res) => {
   res.json(result);
 });
 
+// ---------- Saved paths (Tiger Data) ----------
+// Is saving available? The frontend hides the Save button when it isn't.
+app.get('/api/db/status', (req, res) => res.json({ enabled: dbReady() }));
+
+const requireDb = (req, res, next) =>
+  dbReady() ? next() : res.status(503).json({ error: "Saving paths isn't set up" });
+
+// Save a path. The server re-runs the simulation itself: it never trusts numbers sent by the browser.
+// Body: { customerId, optionId, name, assumptions }
+app.post('/api/paths', requireDb, async (req, res) => {
+  const { customerId, optionId, name, assumptions = {} } = req.body || {};
+  const customer = loadCustomers().find((c) => c.id === customerId);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  const clean = cleanAssumptions(assumptions);
+  const sim = simulate(customer, clean);
+  const option = sim.options.find((o) => o.id === optionId);
+  if (!option) return res.status(400).json({ error: 'Unknown path' });
+  const label = String(name || option.label).trim().slice(0, 60);
+  const endValue = option.forecast[option.forecast.length - 1].net;
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO saved_paths (customer_id, option_id, name, path_label, assumptions, end_value)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at`,
+      [customerId, optionId, label, option.label, JSON.stringify(clean), endValue],
+    );
+    const id = rows[0].id;
+
+    // One row per month, dated from the 1st of this month onward
+    const start = new Date();
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    const times = option.forecast.map((p) => {
+      const d = new Date(start);
+      d.setMonth(d.getMonth() + p.month);
+      return d.toISOString();
+    });
+    await query(
+      `INSERT INTO path_forecasts (time, saved_path_id, net, savings)
+       SELECT t, $1, n, s FROM unnest($2::timestamptz[], $3::int[], $4::int[]) AS f(t, n, s)`,
+      [id, times, option.forecast.map((p) => p.net), option.forecast.map((p) => p.balance)],
+    );
+    res.json({ id, name: label, optionId, pathLabel: option.label, endValue, createdAt: rows[0].created_at });
+  } catch (err) {
+    console.error('Save failed:', err.message);
+    res.status(500).json({ error: "Couldn't save this path" });
+  }
+});
+
+// A customer's saved paths, newest first
+app.get('/api/customers/:id/saved-paths', requireDb, async (req, res) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, name, option_id AS "optionId", path_label AS "pathLabel", assumptions,
+              end_value AS "endValue", created_at AS "createdAt"
+       FROM saved_paths WHERE customer_id = $1 ORDER BY created_at DESC LIMIT 20`,
+      [req.params.id],
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('List failed:', err.message);
+    res.status(500).json({ error: "Couldn't load saved paths" });
+  }
+});
+
+// Compare saved paths over time with TimescaleDB's time_bucket.
+// ?ids=1,2,3&bucket=month|quarter
+app.get('/api/saved-paths/compare', requireDb, async (req, res) => {
+  const ids = String(req.query.ids || '').split(',').map(Number).filter(Number.isInteger).slice(0, 5);
+  if (ids.length === 0) return res.json([]);
+  const interval = req.query.bucket === 'quarter' ? '3 months' : '1 month';
+  try {
+    const { rows } = await query(
+      `SELECT saved_path_id AS id,
+              time_bucket($2::interval, time) AS bucket,
+              round(avg(net))::int AS net,
+              round(avg(savings))::int AS savings
+       FROM path_forecasts
+       WHERE saved_path_id = ANY($1::int[])
+       GROUP BY saved_path_id, bucket
+       ORDER BY saved_path_id, bucket`,
+      [ids, interval],
+    );
+    // Group into one series per saved path: [{ id, points: [{ month, net, savings }] }]
+    const byId = new Map();
+    for (const r of rows) {
+      if (!byId.has(r.id)) byId.set(r.id, []);
+      byId.get(r.id).push({ month: byId.get(r.id).length * (interval === '3 months' ? 3 : 1), net: r.net, savings: r.savings });
+    }
+    res.json([...byId].map(([id, points]) => ({ id, points })));
+  } catch (err) {
+    console.error('Compare failed:', err.message);
+    res.status(500).json({ error: "Couldn't compare paths" });
+  }
+});
+
+// Delete a saved path (its forecast rows go too, thanks to ON DELETE CASCADE)
+app.delete('/api/saved-paths/:id', requireDb, async (req, res) => {
+  try {
+    await query('DELETE FROM saved_paths WHERE id = $1', [Number(req.params.id)]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete failed:', err.message);
+    res.status(500).json({ error: "Couldn't delete this path" });
+  }
+});
+
 //serve React files
 app.use(express.static(clientDir));
 
@@ -110,6 +234,9 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+// Connect to Tiger Data first (if configured), then start the server
+setupDatabase().finally(() => {
+  app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+  });
 });

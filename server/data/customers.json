@@ -131,6 +131,20 @@
         "amount": -600,
         "month": 11
       }
+    ],
+    "milestones": [
+      {
+        "label": "Grad school fund",
+        "kind": "opportunity",
+        "amount": 8000,
+        "targetMonth": 24
+      },
+      {
+        "label": "Home down payment",
+        "kind": "home",
+        "amount": 25000,
+        "targetMonth": 36
+      }
     ]
   },
   {
@@ -285,6 +299,20 @@
         "label": "Holiday gifts",
         "amount": -1200,
         "month": 11
+      }
+    ],
+    "milestones": [
+      {
+        "label": "Kitchen remodel",
+        "kind": "home",
+        "amount": 40000,
+        "targetMonth": 12
+      },
+      {
+        "label": "Family trip to Japan",
+        "kind": "trip",
+        "amount": 12000,
+        "targetMonth": 18
       }
     ]
   }
