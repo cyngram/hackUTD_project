@@ -498,17 +498,32 @@ function nextStepFor(option, customer) {
 }
 
 // ---------- "Coming up" + nudges for the home screen ----------
-// "March 2027" for a number of months from now
-function monthYear(monthsFromNow) {
+// The date a number of months from now. Starts from the 1st so adding months
+// never skips one (Jan 31 + 1 month would otherwise land in March).
+function monthsFromNowDate(monthsFromNow) {
   const d = new Date();
+  d.setDate(1);
   d.setMonth(d.getMonth() + monthsFromNow);
-  return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  return d;
 }
 
+// Always with the year: "March 2027" (charts, milestones, service dates)
+function monthYear(monthsFromNow) {
+  return monthsFromNowDate(monthsFromNow).toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+
+// Friendly text: "April" if it's this year, "April 2027" if it isn't
 function monthName(monthsFromNow) {
-  const d = new Date();
-  d.setMonth(d.getMonth() + monthsFromNow);
-  return d.toLocaleString('en-US', { month: 'long' });   // e.g. "February"
+  const d = monthsFromNowDate(monthsFromNow);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleString("en-US", sameYear ? { month: "long" } : { month: "long", year: "numeric" });
+}
+
+// "about 8 months" / "about 3 years" so long waits are easy to picture
+function howLong(months) {
+  if (months < 12) return `about ${months} month${months === 1 ? "" : "s"}`;
+  const years = Math.round(months / 12);
+  return `about ${years} year${years === 1 ? "" : "s"}`;
 }
 
 export function moments(customer) {
@@ -548,9 +563,12 @@ export function moments(customer) {
     nudges.push({
       type: 'trend',
       title: 'If your trend holds',
-      text: target === 3
-        ? `You'll reach a 3-month emergency fund by ${monthName(months)}. Then it's treat-yourself time.`
-        : `You'll reach a 6-month emergency fund by ${monthName(months)}.`,
+      // Show the math in plain words: what you save, what you're aiming for, and when you get there
+      text: `Saving about ${money(leftover)} a month, you'll have ${target} months of bills `
+        + `(${money(target * today.monthlyExpenses)}) set aside by ${monthName(months)}, ${howLong(months)} from now.`
+        + (months > 24
+          ? " Trimming a little each month gets you there sooner."
+          : target === 3 ? " Then it's treat-yourself time." : ""),
     });
   } else {
     nudges.push({
