@@ -261,7 +261,7 @@ export function simulate(customer, assumptions = {}) {
       optionId: best.id,
       headline: `Our pick for ${customer.shortName || customer.name}: ${best.label}`,
       reason: best.why,
-      nextStep: nextStepFor(best),
+      nextStep: nextStepFor(best, customer),
     },
   };
 }
@@ -359,12 +359,22 @@ export function overview(customer) {
   };
 }
 
-function nextStepFor(option) {
-  if (option.id === "keep")
-    return "Book the service appointment and keep saving toward your next car.";
-  if (option.type === "lease")
-    return "Ask your dealer about current lease offers.";
-  return "Get a trade-in appraisal and check your pre-approved rate.";
+// The one clear next step for the recommended path
+function nextStepFor(option, customer) {
+  const original = customer.options.find((o) => o.id === option.id) || {};
+  const leasing = customer.vehicle.type === 'lease';
+
+  if (option.type === 'keep')
+    return 'Book the service appointment and keep saving toward your next car.';
+  if (option.type === 'lease')
+    return 'Ask your dealer about current lease offers before your lease ends.';
+  if (leasing && option.id === 'buyout')
+    return 'Ask your leasing company for your buyout quote, then compare it with a pre-approved loan rate.';
+  if (leasing)
+    return 'Ask your dealer about lease-end trade-up offers and get pre-approved for financing.';
+  if (original.tradeIn > 0)
+    return 'Get a trade-in appraisal and check your pre-approved rate.';
+  return 'Get pre-approved for financing so you know your rate before you shop.';
 }
 
 // ---------- "Coming up" + nudges for the home screen ----------
