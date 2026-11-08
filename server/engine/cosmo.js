@@ -29,7 +29,7 @@ function buildData(customer, overview, sim, afford) {
   lines.push(`Assumptions: gas $${sim.assumptions.gasPrice}/gal, income gap ${sim.assumptions.incomeGapMonths} months, surprise repair $${sim.assumptions.surpriseRepair}.`);
   if (sim.assumptions.plans?.length) {
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    lines.push(`Their yearly plans: ${sim.assumptions.plans.map((p) => `${p.label} ${p.amount >= 0 ? '+' : '-'}$${Math.abs(p.amount)} in ${MONTHS[p.month]}`).join('; ')}.`);
+    lines.push(`Their plans: ${sim.assumptions.plans.map((p) => `${p.label} ${p.amount >= 0 ? '+' : '-'}$${Math.abs(p.amount)} ${p.repeat === false ? 'once in' : 'every'} ${MONTHS[p.month]}`).join('; ')}.`);
   }
   lines.push(`Projected monthly income in this scenario: $${sim.assumptions.monthlyIncome}.`);
   lines.push('Options:');
@@ -95,19 +95,24 @@ export async function askCosmo({ customer, overview, sim, message, history = [],
     { role: 'user', parts: [{ text: String(message).slice(0, 2000) }] },
   ];
 
+  // Gemini's free tier sometimes answers "busy" (429/5xx). Wait a moment and retry once.
+  const callGemini = () =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: `${RULES}\n\nDATA:\n${buildData(customer, overview, sim, afford)}` }] },
+        contents,
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: `${RULES}\n\nDATA:\n${buildData(customer, overview, sim, afford)}` }] },
-          contents,
-        }),
-        signal: AbortSignal.timeout(20000),
-      }
-    );
+    let res = await callGemini();
+    if (res.status === 429 || res.status >= 500) {
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      res = await callGemini();
+    }
     if (!res.ok) {
       console.error('Gemini error', res.status, (await res.text()).slice(0, 300));
       return { reply: backup, source: 'fallback' };

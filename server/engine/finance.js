@@ -185,7 +185,8 @@ function simulateOption(customer, option, a) {
       (month === 1 ? a.surpriseRepair : 0);
     // Their plans repeat every year in that calendar month; services happen once on this path's schedule
     const calendarMonth = (startMonth + month) % 12;
-    const plansNow = a.plans.filter((plan) => plan.month === calendarMonth);
+    // repeat: false = a one-time plan, so it only counts the first time that month comes around
+    const plansNow = a.plans.filter((plan) => plan.month === calendarMonth && (plan.repeat !== false || month <= 12));
     const servicesNow = services.filter((e) => e.month === month);
     const events = [
       ...plansNow.map((plan) => ({ label: plan.label, amount: plan.amount })),

@@ -35,6 +35,7 @@ function cleanAssumptions(assumptions) {
         label: String(plan?.label ?? '').trim().slice(0, 40),
         amount: Number(plan?.amount),
         month: Number(plan?.month),
+        repeat: plan?.repeat !== false,   // default: repeats every year
       }))
       .filter((plan) =>
         plan.label &&

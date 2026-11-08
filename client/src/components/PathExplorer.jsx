@@ -38,7 +38,7 @@ const WHAT_IFS = [
   { key: "surpriseRepair", label: "One-time expense", min: () => 0, max: () => 5000, step: 100, show: (v) => money(v) },
 ];
 
-const emptyDraft = () => ({ label: "", amount: "", kind: "expense", month: (new Date().getMonth() + 1) % 12 });
+const emptyDraft = () => ({ label: "", amount: "", kind: "expense", repeat: "once", month: (new Date().getMonth() + 1) % 12 });
 
 export default function PathExplorer({ customerId, comingUp, treat, baseIncome, initialSim, onClose, onAskCosmo }) {
   // Only send what the user changed; the backend fills in its own defaults (gas price, their income, their plans)
@@ -83,7 +83,15 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
     const amount = Number(draft.amount);
     if (!draft.label.trim()) return setDraftError("Give your plan a name.");
     if (!amount || amount <= 0) return setDraftError("Enter an amount above $0.");
-    setPlans([...plans, { label: draft.label.trim(), amount: draft.kind === "expense" ? -amount : amount, month: Number(draft.month) }]);
+    setPlans([
+      ...plans,
+      {
+        label: draft.label.trim(),
+        amount: draft.kind === "expense" ? -amount : amount,
+        month: Number(draft.month),
+        repeat: draft.repeat === "yearly",   // false = happens once, the next time that month comes around
+      },
+    ]);
     setDraft(emptyDraft());
     setDraftError("");
   };
@@ -228,7 +236,9 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
                   {plans.map((plan, i) => (
                     <li key={`${plan.label}-${i}`}>
                       <span className="plan-name">{plan.label}</span>
-                      <span className="plan-when">Every {MONTHS[plan.month]}</span>
+                      <span className="plan-when">
+                        {plan.repeat === false ? `Once in ${MONTHS[plan.month]}` : `Every ${MONTHS[plan.month]}`}
+                      </span>
                       <span className={plan.amount >= 0 ? "plan-in" : "plan-out"}>
                         {plan.amount >= 0 ? "+" : "-"}{money(Math.abs(plan.amount))}
                       </span>
@@ -264,6 +274,10 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
                   <select aria-label="Month" value={draft.month} onChange={(e) => setDraft({ ...draft, month: e.target.value })}>
                     {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
                   </select>
+                  <select aria-label="How often" value={draft.repeat} onChange={(e) => setDraft({ ...draft, repeat: e.target.value })}>
+                    <option value="once">Once</option>
+                    <option value="yearly">Every year</option>
+                  </select>
                   <button type="submit" className="primary-button">
                     <Plus size={16} /> Add plan
                   </button>
@@ -279,7 +293,15 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
               <strong>{sim.recommendation.headline}</strong>
               <p>Next step: {sim.recommendation.nextStep}</p>
             </div>
-            <button className="primary-button" onClick={onAskCosmo}>
+            <button
+              className="primary-button"
+              onClick={() =>
+                onAskCosmo({
+                  prompt: `Walk me through my paths. Why is ${sim.recommendation.headline.split(": ")[1] ?? "your pick"} the best fit for me, and what would change your mind?`,
+                  assumptions: whatIfs,   // Cosmo sees the same scenario as this page
+                })
+              }
+            >
               <Bot size={18} /> Ask Cosmo
             </button>
           </section>

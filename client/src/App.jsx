@@ -37,6 +37,7 @@ import { api } from "./lib/api";
 import { money, initials, greeting, todayLabel } from "./lib/format";
 import { ICONS, DEFAULT_ICON } from "./lib/icons";
 import PathExplorer from "./components/PathExplorer";
+import CosmoPanel from "./components/CosmoPanel";
 
 const slogans = [
   "everything circling your financial life",
@@ -80,12 +81,6 @@ const detailData = {
   },
 };
 
-const prompts = [
-  "Can I afford a trip?",
-  "What should I do with my car?",
-  "How can I improve my credit?",
-];
-
 function App() {
   const [sloganIndex, setSloganIndex] = useState(0);
   const [dark, setDark] = useState(false);
@@ -100,6 +95,7 @@ function App() {
   const [paths, setPaths] = useState(null);                // path results, loaded early so the path page opens instantly
   const [treatPick, setTreatPick] = useState(null);        // which "treat yourself" chip is selected
   const [pathsOpen, setPathsOpen] = useState(false);       // is the path explorer open?
+  const [cosmoContext, setCosmoContext] = useState(null);  // question + scenario when Cosmo opens from the path page
   const [loadError, setLoadError] = useState("");
 
   // Load the account list once, when the page opens
@@ -269,7 +265,7 @@ function App() {
           baseIncome={overview?.monthlyIncome}
           initialSim={treatPick?.amount ? null : paths}
           onClose={() => { setPathsOpen(false); setTreatPick(null); }}
-          onAskCosmo={() => setCosmoOpen(true)}
+          onAskCosmo={(ctx) => { setCosmoContext(ctx); setCosmoOpen(true); }}
         />
       ) : (
       <main>
@@ -431,7 +427,7 @@ function App() {
       </main>
       )}
 
-      <button className="cosmo-launcher" onClick={() => setCosmoOpen(true)}>
+      <button className="cosmo-launcher" onClick={() => { setCosmoContext(null); setCosmoOpen(true); }}>
         <span className="cosmo-avatar">
           <Bot size={22} />
         </span>
@@ -452,7 +448,16 @@ function App() {
           }}
         />
       )}
-      {cosmoOpen && <CosmoPanel onClose={() => setCosmoOpen(false)} />}
+      {cosmoOpen && (
+        <CosmoPanel
+          key={`${customerId}-${cosmoContext?.prompt ?? "chat"}`}
+          customerId={customerId}
+          name={customer?.shortName}
+          cosmoPrompt={moments?.cosmoPrompt}
+          context={cosmoContext}
+          onClose={() => setCosmoOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -515,137 +520,6 @@ function DetailPanel({ section, onClose, onAsk }) {
         <button className="primary-button" onClick={onAsk}>
           <Bot size={18} /> Build a plan with Cosmo
         </button>
-      </aside>
-    </div>
-  );
-}
-
-function CosmoPanel({ onClose }) {
-  const [messages, setMessages] = useState([
-    {
-      from: "cosmo",
-      text: "Hi Jordan — I’m Cosmo. I can use your accounts, credit, spending, and vehicle details to help you think through your next move. What are we planning?",
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const endRef = useRef(null);
-
-  useEffect(
-    () => endRef.current?.scrollIntoView({ behavior: "smooth" }),
-    [messages],
-  );
-
-  const replyFor = (message) => {
-    const lower = message.toLowerCase();
-    if (lower.includes("trip") || lower.includes("travel")) {
-      return "Based on your $1,240 monthly surplus, a $2,400 trip is realistic in about 3 months without touching emergency savings. I’d move $800/month into a separate travel fund, book flexible airfare first, and keep a 15% buffer. To go sooner, reduce the target budget or use up to $420 in card rewards—not your emergency fund. Want to explore other options?";
-    }
-    if (
-      lower.includes("car") ||
-      lower.includes("vehicle") ||
-      lower.includes("trade")
-    ) {
-      return "Your RAV4 has 18 payments left and positive projected equity. The strongest financial option is to keep it for at least 8 more months, complete the service due in 1,240 miles, and request a trade-in estimate after that. Trading now is possible, but it would likely add about $95/month to a comparable loan. Want to compare keeping it, refinancing, and trading it in?";
-    }
-    if (lower.includes("credit")) {
-      return "At 730, your score is already strong. The most useful next step is keeping card utilization below 10% before statement dates; that could help more than opening another account. Continue on-time payments and avoid a hard inquiry until your next major financing decision. Want a 90-day score plan?";
-    }
-    return "I can build that into a plan using your $32,845 cash balance, $1,240 monthly surplus, 730 credit score, and current payments. I’ll show the safest route first, explain why, and include alternatives. Could you tell me your target amount or ideal timing?";
-  };
-
-  const send = (text) => {
-    if (!text.trim()) return;
-    const clean = text.trim();
-    setMessages((items) => [...items, { from: "user", text: clean }]);
-    setInput("");
-    window.setTimeout(
-      () =>
-        setMessages((items) => [
-          ...items,
-          { from: "cosmo", text: replyFor(clean) },
-        ]),
-      450,
-    );
-  };
-
-  const submit = (event) => {
-    event.preventDefault();
-    send(input);
-  };
-
-  return (
-    <div className="overlay cosmo-overlay" onMouseDown={onClose}>
-      <aside
-        className="cosmo-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cosmo-title"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <header className="cosmo-header">
-          <div className="cosmo-title">
-            <span className="cosmo-avatar">
-              <Bot size={23} />
-            </span>
-            <div>
-              <h2 id="cosmo-title">Cosmo</h2>
-              <p>
-                <span /> Online · Your financial co-pilot
-              </p>
-            </div>
-          </div>
-          <button
-            className="icon-button"
-            onClick={onClose}
-            aria-label="Close Cosmo"
-          >
-            <X size={21} />
-          </button>
-        </header>
-        <div className="data-note">
-          <ShieldCheck size={15} /> Advice based on your Orbit financial
-          snapshot
-        </div>
-        <div className="messages">
-          {messages.map((message, index) => (
-            <div
-              className={`message ${message.from}`}
-              key={`${message.from}-${index}`}
-            >
-              {message.from === "cosmo" && (
-                <span className="message-avatar">
-                  <Bot size={16} />
-                </span>
-              )}
-              <p>{message.text}</p>
-            </div>
-          ))}
-          {messages.length === 1 && (
-            <div className="suggested-prompts">
-              {prompts.map((prompt) => (
-                <button key={prompt} onClick={() => send(prompt)}>
-                  {prompt}
-                  <ArrowRight size={14} />
-                </button>
-              ))}
-            </div>
-          )}
-          <div ref={endRef} />
-        </div>
-        <form className="chat-form" onSubmit={submit}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Cosmo anything…"
-            aria-label="Message Cosmo"
-          />
-          <button type="submit" aria-label="Send message">
-            <Send size={18} />
-          </button>
-        </form>
-        <p className="chat-disclaimer">
-          Cosmo provides guidance, not professional financial advice.
-        </p>
       </aside>
     </div>
   );

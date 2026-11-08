@@ -1518,7 +1518,7 @@ main {
 .plan-out { color: var(--ink); font-weight: 600; }
 .plan-form {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.2fr auto;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr auto;
   gap: 10px;
   margin-top: 16px;
 }
@@ -1540,4 +1540,49 @@ main {
   .plan-form .primary-button { grid-column: 1 / -1; }
   .path-box { padding: 20px; }
 }
+
+/* Cosmo replies: rich text inside the bubble */
+.message-body {
+  max-width: 83%;
+  padding: 12px 14px;
+  border-radius: 5px 15px 15px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.message.user .message-body {
+  border-radius: 15px 5px 15px 15px;
+  background: var(--blue-deep);
+  color: white;
+}
+.message-body p {
+  max-width: none;
+  margin: 0 0 8px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+.message-body p:last-child { margin-bottom: 0; }
+.message-body ul { margin: 0 0 8px; padding-left: 18px; }
+.message-body li { margin-bottom: 4px; }
+.message-body strong { font-weight: 700; }
+.typing { display: flex; gap: 4px; align-items: center; }
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: typing 1s infinite ease-in-out;
+}
+.typing span:nth-child(2) { animation-delay: 0.15s; }
+.typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+.chat-form button:disabled { opacity: 0.6; }
+.path-page { padding-bottom: 140px; }   /* room so the Cosmo button never covers the last card */
 
