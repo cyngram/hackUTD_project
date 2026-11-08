@@ -1648,3 +1648,22 @@ main {
   .milestone-form { grid-template-columns: 1fr 1fr; }
 }
 
+/* Your car tab */
+.car-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.car-field { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.car-field input {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+.car-summary { margin: 14px 0 0; font-size: 13px; color: var(--blue-deep); }
+

@@ -39,7 +39,8 @@
       "payment": 320,
       "insurance": 140,
       "maintenance": 0,
-      "monthsLeft": 3
+      "monthsLeft": 3,
+      "lastOilChangeMiles": 31000
     },
     "options": [
       {
@@ -53,26 +54,28 @@
         "termMonths": 48,
         "mpg": 34,
         "insurance": 140,
-        "maintenance": 60,
+        "maintenance": 25,
         "valueIn5Years": 9000,
         "perk": "Keep the car you already know",
         "serviceEvents": [
           {
             "label": "40k-mile service",
-            "month": 4,
+            "atMiles": 40000,
             "amount": 450
           },
           {
             "label": "New tires",
-            "month": 28,
+            "atMiles": 55000,
             "amount": 700
           },
           {
             "label": "60k-mile service",
-            "month": 40,
+            "atMiles": 60000,
             "amount": 600
           }
-        ]
+        ],
+        "startMiles": "current",
+        "oilInterval": 10000
       },
       {
         "id": "hybrid",
@@ -90,16 +93,22 @@
         "perk": "2 years of included maintenance",
         "serviceEvents": [
           {
-            "label": "First service after included maintenance",
-            "month": 25,
+            "label": "30k-mile service",
+            "atMiles": 30000,
             "amount": 300
           },
           {
             "label": "New tires",
-            "month": 40,
+            "atMiles": 45000,
             "amount": 750
           }
-        ]
+        ],
+        "startMiles": 0,
+        "oilInterval": 10000,
+        "includedMaintenance": {
+          "months": 24,
+          "miles": 25000
+        }
       },
       {
         "id": "release",
@@ -112,7 +121,8 @@
         "maintenance": 0,
         "valueIn5Years": 0,
         "perk": "Always in a new car",
-        "serviceEvents": []
+        "serviceEvents": [],
+        "startMiles": 0
       }
     ],
     "plans": [
@@ -187,7 +197,8 @@
       "payment": 0,
       "insurance": 110,
       "maintenance": 90,
-      "monthsLeft": 0
+      "monthsLeft": 0,
+      "lastOilChangeMiles": 108500
     },
     "options": [
       {
@@ -198,31 +209,33 @@
         "upfront": 1200,
         "mpg": 30,
         "insurance": 110,
-        "maintenance": 90,
+        "maintenance": 40,
         "valueIn5Years": 4000,
         "perk": "No new loan",
         "serviceEvents": [
           {
             "label": "New tires",
-            "month": 6,
+            "atMiles": 115000,
             "amount": 800
           },
           {
             "label": "Brake service",
-            "month": 18,
+            "atMiles": 125000,
             "amount": 600
           },
           {
-            "label": "150k-mile service",
-            "month": 36,
-            "amount": 900
+            "label": "Water pump and belts",
+            "atMiles": 135000,
+            "amount": 1100
           },
           {
-            "label": "Water pump and belts",
-            "month": 48,
-            "amount": 1100
+            "label": "150k-mile service",
+            "atMiles": 150000,
+            "amount": 900
           }
-        ]
+        ],
+        "startMiles": "current",
+        "oilInterval": 10000
       },
       {
         "id": "sienna",
@@ -240,16 +253,22 @@
         "perk": "Room for the whole family + 2 years of included maintenance",
         "serviceEvents": [
           {
-            "label": "First service after included maintenance",
-            "month": 25,
+            "label": "30k-mile service",
+            "atMiles": 30000,
             "amount": 400
           },
           {
             "label": "New tires",
-            "month": 44,
+            "atMiles": 40000,
             "amount": 900
           }
-        ]
+        ],
+        "startMiles": 0,
+        "oilInterval": 10000,
+        "includedMaintenance": {
+          "months": 24,
+          "miles": 25000
+        }
       },
       {
         "id": "rav4",
@@ -262,21 +281,23 @@
         "termMonths": 48,
         "mpg": 30,
         "insurance": 135,
-        "maintenance": 40,
+        "maintenance": 20,
         "valueIn5Years": 15000,
         "perk": "Certified warranty",
         "serviceEvents": [
           {
             "label": "New tires",
-            "month": 30,
+            "atMiles": 45000,
             "amount": 700
           },
           {
-            "label": "Major service",
-            "month": 42,
+            "label": "60k-mile service",
+            "atMiles": 60000,
             "amount": 450
           }
-        ]
+        ],
+        "startMiles": 30000,
+        "oilInterval": 10000
       }
     ],
     "plans": [

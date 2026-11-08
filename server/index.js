@@ -24,7 +24,7 @@ function loadCustomers() {
 // Only accept the stress-test numbers we expect (ignore anything weird)
 function cleanAssumptions(assumptions) {
   const clean = {};
-  for (const key of ['gasPrice', 'incomeGapMonths', 'surpriseRepair', 'goalAmount', 'goalMonths', 'monthlyIncome']) {
+  for (const key of ['gasPrice', 'incomeGapMonths', 'surpriseRepair', 'goalAmount', 'goalMonths', 'monthlyIncome', 'weeklyMiles', 'currentMileage', 'lastOilChangeMiles']) {
     const n = Number(assumptions?.[key]);
     if (assumptions?.[key] !== undefined && !Number.isNaN(n) && n >= 0) clean[key] = n;
   }

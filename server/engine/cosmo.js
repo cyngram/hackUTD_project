@@ -15,6 +15,7 @@ Rules:
 - End with a short follow-up question such as "Want to explore other options?"
 - Be warm and honest. If every option has a risk, say so kindly.
 - For "can I afford" questions, use the AFFORDABILITY CHECK in the data: answer clearly (yes / it's tight / not yet), say what it does to their savings cushion, then give exactly three ideas: (1) the full purchase, (2) a scaled-down version, (3) saving up first and when they could buy it.
+- If they ask about service or maintenance, mention they can update their mileage and last oil change in the "Your car" tab for more accurate dates.
 - When milestones (home, trips, school) are in the data, mention how each path affects reaching them. That is often the most important trade-off.
 - This is a demo with made-up customers. Do not ask for personal or account information.`;
 
@@ -33,6 +34,7 @@ function buildData(customer, overview, sim, afford) {
     lines.push(`Their plans: ${sim.assumptions.plans.map((p) => `${p.label} ${p.amount >= 0 ? '+' : '-'}$${Math.abs(p.amount)} ${p.repeat === false ? 'once in' : 'every'} ${MONTHS[p.month]}`).join('; ')}.`);
   }
   lines.push(`Projected monthly income in this scenario: $${sim.assumptions.monthlyIncome}.`);
+  lines.push(`Driving: about ${sim.assumptions.weeklyMiles} miles a week; current car at ${sim.assumptions.currentMileage} miles; last oil change at ${sim.assumptions.lastOilChangeMiles} miles. Service dates are estimated from these miles.`);
   lines.push('Options:');
   for (const o of sim.options) {
     lines.push(
@@ -41,7 +43,7 @@ function buildData(customer, overview, sim, afford) {
       `upfront $${o.upfront}; left over $${o.leftoverPerMonth}/mo; 5-year true cost $${o.fiveYear.netCost}; ` +
       (o.loan ? `loan $${o.loan.financed} at ${o.loan.apr}% for ${o.loan.termMonths} months, total interest $${o.loan.totalInterest}; ` : '') +
       `perk: ${o.perk || 'none'}; ` +
-      (o.nextService ? `next big service: ${o.nextService.label} ($${o.nextService.amount}) in ${o.nextService.when}; ` : '') +
+      (o.nextService ? `next service: ${o.nextService.label}${o.nextService.atMiles ? ` at ${o.nextService.atMiles} miles` : ''} (${o.nextService.amount ? `$${o.nextService.amount}` : 'included'}) around ${o.nextService.when}; ` : '') +
       (o.milestones?.length
         ? `milestones: ${o.milestones.map((m) => `${m.label} ($${m.amount} by ${m.target}) ${m.reached ? (m.onTrack ? `on track, reached ${m.reached}` : `late, reached ${m.reached}`) : 'not reached within 5 years'}`).join('; ')}; `
         : '') +

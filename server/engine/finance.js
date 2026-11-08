@@ -33,10 +33,15 @@ export function monthlyPayment(principal, aprPercent, months) {
   return (principal * r) / (1 - Math.pow(1 + r, -months));
 }
 
-// Monthly gas cost for a daily commute
-export function monthlyGasCost(dailyMiles, mpg, gasPrice) {
+// How far they drive: their weekly miles (default: commute on workdays + about 80 miles of errands)
+export function weeklyMilesFor(customer) {
+  return customer.weeklyMiles ?? Math.round(customer.dailyCommuteMiles * 5 + 80);
+}
+
+// Monthly gas cost from miles driven per month
+export function monthlyGasCost(monthlyMiles, mpg, gasPrice) {
   if (!mpg) return 0;
-  return ((dailyMiles * 30) / mpg) * gasPrice;
+  return (monthlyMiles / mpg) * gasPrice;
 }
 
 // Credit card minimum payment (about 3% of the balance, at least $25)
@@ -122,11 +127,16 @@ function simulateOption(customer, option, a) {
     paymentMonths = MONTHS; // assume you keep leasing for the whole 5 years
   }
 
-  const gas = monthlyGasCost(
-    customer.dailyCommuteMiles,
-    option.mpg,
-    a.gasPrice,
-  );
+  // ---- Miles drive the service schedule (Toyota's maintenance schedules go by mileage, not months) ----
+  const monthlyMiles = (a.weeklyMiles * 52) / 12;
+  const usesCurrentCar = option.startMiles === "current";            // buying out / keeping the car they have
+  const startMiles = usesCurrentCar ? a.currentMileage : option.startMiles ?? 0;
+  const monthAt = (odometer) => Math.max(1, Math.ceil((odometer - startMiles) / monthlyMiles));
+  const included = option.includedMaintenance;                       // e.g. new Toyotas: 2 years / 25,000 miles
+  const isCovered = (month, odometer) =>
+    Boolean(included) && month <= included.months && odometer - startMiles <= included.miles;
+
+  const gas = monthlyGasCost(monthlyMiles, option.mpg, a.gasPrice);
   const carMonthly = carPayment + option.insurance + option.maintenance + gas;
 
   const monthlyExpenses = baseExpenses + carMonthly + cardMin;
@@ -145,7 +155,25 @@ function simulateOption(customer, option, a) {
   // 5-year true cost = everything you pay + the trade-in you give up - what the car is worth after
   const runningCosts = (option.insurance + option.maintenance + gas) * MONTHS;
   // Big service items on this path's schedule (tires, brakes, major services)
-  const services = (option.serviceEvents || []).filter((e) => e.month >= 1 && e.month <= MONTHS);
+  // Oil changes every N miles (their last oil change sets the first one on the car they already have)
+  const oilChanges = [];
+  if (option.type !== "lease") {
+    const interval = option.oilInterval ?? 10000;
+    let next = usesCurrentCar ? a.lastOilChangeMiles + interval : startMiles + interval;
+    while (monthAt(next) <= MONTHS) {
+      const month = monthAt(next);
+      oilChanges.push({ label: "Oil change", atMiles: next, month, amount: isCovered(month, next) ? 0 : option.oilCost ?? 90 });
+      next += interval;
+    }
+  }
+  // Bigger services (tires, brakes, major services) at their mileage
+  const bigServices = (option.serviceEvents || []).map((e) => {
+    const month = e.atMiles != null ? monthAt(e.atMiles) : e.month;
+    return { ...e, month, amount: isCovered(month, e.atMiles ?? startMiles) ? 0 : e.amount };
+  });
+  const services = [...oilChanges, ...bigServices]
+    .filter((e) => e.month >= 1 && e.month <= MONTHS && !(e.atMiles != null && e.atMiles <= startMiles && !usesCurrentCar))
+    .sort((x, y) => x.month - y.month);
   const serviceTotal = services.reduce((total, e) => total + e.amount, 0);
   const cashOut =
     (option.upfront || 0) + carPayment * paymentMonths + runningCosts + serviceTotal;
@@ -287,6 +315,9 @@ export function simulate(customer, assumptions = {}) {
   a.monthlyIncome = a.monthlyIncome ?? customer.monthlyIncome;
   a.plans = a.plans ?? customer.plans ?? [];
   a.milestones = a.milestones ?? customer.milestones ?? [];
+  a.weeklyMiles = a.weeklyMiles ?? weeklyMilesFor(customer);
+  a.currentMileage = a.currentMileage ?? customer.vehicle.mileage;
+  a.lastOilChangeMiles = a.lastOilChangeMiles ?? customer.vehicle.lastOilChangeMiles ?? a.currentMileage;
   const results = customer.options.map((o) => simulateOption(customer, o, a));
 
   // Recommendation: lowest 5-year true cost among options you can afford monthly.
@@ -360,11 +391,7 @@ function creditLabel(score) {
 export function overview(customer) {
   const v = customer.vehicle;
   const cardMin = cardMinimum(customer.cardBalance);
-  const gas = monthlyGasCost(
-    customer.dailyCommuteMiles,
-    v.mpg,
-    DEFAULTS.gasPrice,
-  );
+  const gas = monthlyGasCost((weeklyMilesFor(customer) * 52) / 12, v.mpg, DEFAULTS.gasPrice);
   const carMonthly = v.payment + v.insurance + v.maintenance + gas;
   const monthlyExpenses =
     customer.housing +

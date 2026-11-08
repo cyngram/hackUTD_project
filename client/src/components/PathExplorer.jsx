@@ -192,8 +192,8 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
                     </small>
                     <small>
                       {o.nextService
-                        ? `Next service: ${o.nextService.label.toLowerCase()}, ${o.nextService.when} · ${money(o.nextService.amount)}`
-                        : "No big service expected"}
+                        ? `Next: ${o.nextService.label.toLowerCase()}${o.nextService.atMiles ? ` at ${o.nextService.atMiles.toLocaleString("en-US")} mi` : ""}, ${o.nextService.when} · ${o.nextService.amount ? money(o.nextService.amount) : "included"}`
+                        : "Service covered while leasing"}
                     </small>
                     {o.milestones.length > 0 && (
                       <small>
@@ -268,10 +268,48 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
                 <button className={tab === "whatifs" ? "active" : ""} onClick={() => setTab("whatifs")}>What-ifs</button>
                 <button className={tab === "plans" ? "active" : ""} onClick={() => setTab("plans")}>Plans</button>
                 <button className={tab === "milestones" ? "active" : ""} onClick={() => setTab("milestones")}>Milestones</button>
+                <button className={tab === "car" ? "active" : ""} onClick={() => setTab("car")}>Your car</button>
               </div>
             </div>
 
-            {tab === "milestones" ? (
+            {tab === "car" ? (
+              <div>
+                <p className="path-sub" style={{ marginTop: 14 }}>
+                  Toyota's maintenance schedules go by miles, not months. Keep these up to date and every path's
+                  service dates update with them.
+                </p>
+                <div className="car-grid">
+                  {[
+                    { key: "currentMileage", label: "Current mileage", step: 500 },
+                    { key: "lastOilChangeMiles", label: "Mileage at your last oil change", step: 500 },
+                    { key: "weeklyMiles", label: "Miles you drive per week", step: 10 },
+                  ].map((f) => (
+                    <label className="car-field" key={f.key}>
+                      <span>{f.label}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step={f.step}
+                        value={whatIfs[f.key] ?? sim.assumptions[f.key]}
+                        onChange={(e) =>
+                          setWhatIfs((prev) => ({ ...prev, [f.key]: Math.max(0, Number(e.target.value) || 0) }))
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+                {(() => {
+                  const weekly = whatIfs.weeklyMiles ?? sim.assumptions.weeklyMiles;
+                  const next = selected.nextService;
+                  return (
+                    <p className="car-summary">
+                      About {Math.round((weekly * 52) / 12).toLocaleString("en-US")} miles a month
+                      {next ? ` · On this path, next up: ${next.label.toLowerCase()} around ${next.when}` : " · Service is covered on this path"}
+                    </p>
+                  );
+                })()}
+              </div>
+            ) : tab === "milestones" ? (
               <div>
                 <ul className="plan-list">
                   {selected.milestones.map((m) => {
