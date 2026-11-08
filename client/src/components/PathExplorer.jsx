@@ -258,6 +258,17 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
             )}
           </section>
 
+          <SavedPaths
+            customerId={customerId}
+            selected={selected}
+            whatIfs={whatIfs}
+            onOpen={(path) => {
+              setWhatIfs(path.assumptions ?? {});   // restore the saved what-ifs and plans
+              setSelectedId(path.optionId);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+
           <section className="path-box">
             <div className="path-box-head">
               <div>
@@ -441,16 +452,6 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
             )}
           </section>
 
-          <SavedPaths
-            customerId={customerId}
-            selected={selected}
-            whatIfs={whatIfs}
-            onOpen={(path) => {
-              setWhatIfs(path.assumptions ?? {});   // restore the saved what-ifs and plans
-              setSelectedId(path.optionId);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
 
           <section className="next-step">
             <CheckCircle2 size={22} />

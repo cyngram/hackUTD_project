@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url'; 
 import fs from 'fs';
-import { simulate, overview, moments, affordability } from './engine/finance.js';
+import { simulate, overview, moments, affordability, budget } from './engine/finance.js';
 import { askCosmo } from './engine/cosmo.js';
 import { dbReady, query, setupDatabase } from './db.js';
 
@@ -77,6 +77,13 @@ function findAmount(message) {
 // List of customers (for the picker cards)
 app.get('/api/customers', (req, res) => {
   res.json(loadCustomers());
+});
+
+// Monthly budget breakdown for the next 12 months
+app.get('/api/customers/:id/budget', (req, res) => {
+  const customer = loadCustomers().find((c) => c.id === req.params.id);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  res.json(budget(customer));
 });
 
 // "Coming up" moment + nudges for the home screen

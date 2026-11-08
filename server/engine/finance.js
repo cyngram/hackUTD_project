@@ -473,7 +473,12 @@ export function overview(customer) {
         items: [{ kind: "car", label: v.model, amount: null, note: vehicleStatus }, ...vehicleItems],
       },
     ],
-    creditScore: { value: customer.creditScore, ...credit },
+    creditScore: {
+      value: customer.creditScore,
+      ...credit,
+      utilization: Math.round((customer.cardBalance / customer.cardLimit) * 100),          // % of card limit used
+      payDownTo30: Math.max(0, round(customer.cardBalance - customer.cardLimit * 0.3)),   // $ to get under 30%
+    },
     breakdown: {
       housing: round(customer.housing),
       utilities: round(customer.utilities),
@@ -630,4 +635,46 @@ export function affordability(customer, amount) {
     saveFirstMonths,
     saveFirstBy: saveFirstMonths !== null ? monthName(saveFirstMonths) : null,
   };
+}
+
+// ---------- Monthly budget breakdown (next 12 months, their current car) ----------
+// Uses their bank-history spending pattern and their plans, so busy months (holidays, trips) show up.
+export function budget(customer) {
+  const v = customer.vehicle;
+  const cardMin = cardMinimum(customer.cardBalance);
+  const gas = monthlyGasCost((weeklyMilesFor(customer) * 52) / 12, v.mpg, DEFAULTS.gasPrice);
+  const car = v.payment + v.insurance + v.maintenance + gas;
+  const pattern = customer.spendingPattern;
+  const plans = customer.plans ?? [];
+  const startMonth = new Date().getMonth();
+
+  const months = [];
+  for (let m = 0; m < 12; m++) {
+    const calendarMonth = (startMonth + m) % 12;
+    const plansNow = plans.filter((plan) => plan.month === calendarMonth);
+    const planSpending = plansNow.filter((p) => p.amount < 0).reduce((t, p) => t - p.amount, 0);
+    const planIncome = plansNow.filter((p) => p.amount > 0).reduce((t, p) => t + p.amount, 0);
+    const categories = [
+      { key: "housing", label: customer.housingType === "mortgage" ? "Mortgage" : "Rent", amount: round(customer.housing) },
+      { key: "utilities", label: "Utilities", amount: round(customer.utilities) },
+      { key: "car", label: "Car (payment, insurance, gas)", amount: round(car) },
+      { key: "everyday", label: "Everyday spending", amount: round(customer.otherExpenses * (pattern ? pattern[calendarMonth] : 1)) },
+      { key: "card", label: "Credit card minimum", amount: round(cardMin) },
+      ...(planSpending ? [{ key: "plans", label: plansNow.filter((p) => p.amount < 0).map((p) => p.label).join(", "), amount: round(planSpending) }] : []),
+    ];
+    const spending = categories.reduce((t, c) => t + c.amount, 0);
+    const income = round(customer.monthlyIncome + planIncome);
+    months.push({
+      month: m,
+      label: monthYear(m),
+      income,
+      spending,
+      leftover: income - spending,
+      categories,
+      events: plansNow.map((p) => ({ label: p.label, amount: p.amount })),
+    });
+  }
+  const avgSpending = round(months.reduce((t, x) => t + x.spending, 0) / 12);
+  const busiest = months.reduce((a, b) => (b.spending > a.spending ? b : a));
+  return { customerId: customer.id, months, avgSpending, busiest: { label: busiest.label, spending: busiest.spending } };
 }

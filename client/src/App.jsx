@@ -38,48 +38,13 @@ import { money, initials, greeting, todayLabel } from "./lib/format";
 import { ICONS, DEFAULT_ICON } from "./lib/icons";
 import PathExplorer from "./components/PathExplorer";
 import CosmoPanel from "./components/CosmoPanel";
+import InsightPanel from "./components/InsightPanel";
+import BudgetPanel from "./components/BudgetPanel";
 
 const slogans = [
   "everything circling your financial life",
   "Keep your money in orbit",
 ];
-
-const detailData = {
-  accounts: {
-    heading: "Accounts overview",
-    subheading: "Every account, moving together.",
-    metric: "$32,845.20",
-    metricLabel: "Total cash balance",
-    insights: [
-      ["Savings pace", "On track", "You are saving 14.8% of take-home income."],
-      [
-        "Monthly cash flow",
-        "+$1,240",
-        "Income is comfortably ahead of recurring spending.",
-      ],
-      [
-        "Emergency runway",
-        "5.2 months",
-        "Just 0.8 months from your recommended cushion.",
-      ],
-    ],
-  },
-  home: {
-    heading: "Home finances",
-    subheading: "Your mortgage, utilities, and lease details.",
-    metric: "$2,184",
-    metricLabel: "Average monthly cost",
-    insights: [
-      ["Mortgage", "$1,824/mo", "4.25% fixed rate · 24 years remaining"],
-      ["Utilities", "$360/mo", "Down $31 compared with last month."],
-      [
-        "Projection",
-        "$4,980 saved",
-        "Estimated annual benefit from current rate.",
-      ],
-    ],
-  },
-};
 
 function App() {
   const [sloganIndex, setSloganIndex] = useState(0);
@@ -96,6 +61,15 @@ function App() {
   const [treatPick, setTreatPick] = useState(null);        // which "treat yourself" chip is selected
   const [pathsOpen, setPathsOpen] = useState(false);       // is the path explorer open?
   const [cosmoContext, setCosmoContext] = useState(null);  // question + scenario when Cosmo opens from the path page
+  const [budgetOpen, setBudgetOpen] = useState(false);     // monthly budget breakdown
+
+  // Open Cosmo with a question ready (from any panel)
+  const askCosmo = (prompt, assumptions = {}) => {
+    setSelected(null);
+    setBudgetOpen(false);
+    setCosmoContext({ prompt, assumptions });
+    setCosmoOpen(true);
+  };
   const [loadError, setLoadError] = useState("");
 
   // Load the account list once, when the page opens
@@ -277,8 +251,8 @@ function App() {
               {loadError ? `Couldn't load your data: ${loadError}` : "Here's what's coming up in your orbit."}
             </p>
           </div>
-          <button className="month-button">
-            November <ChevronRight size={17} />
+          <button className="month-button" onClick={() => setBudgetOpen(true)}>
+            {new Date().toLocaleString("en-US", { month: "long" })} budget <ChevronRight size={17} />
           </button>
         </section>
 
@@ -323,9 +297,13 @@ function App() {
                 </div>
               </div>
               <p className="credit-tip">
-                {overview?.creditScore.value >= 740
-                  ? "You're in great shape. Keep paying on time."
-                  : "Keep card use under 30% to reach Very good (740+)."}
+                {!overview
+                  ? ""
+                  : overview.creditScore.utilization > 30
+                    ? `Your card is at ${overview.creditScore.utilization}% of its limit. Paying down about ${money(overview.creditScore.payDownTo30)} would bring it under 30%, one of the fastest ways to raise your score.`
+                    : overview.creditScore.value >= 740
+                      ? "Strong score. On-time payments and low card use keep it here."
+                      : "Low card use is working for you. Keep paying on time and your score will keep climbing."}
               </p>
             </div>
             <div
@@ -345,9 +323,6 @@ function App() {
             <p className="eyebrow">Your orbit</p>
             <h2>Everything in one place</h2>
           </div>
-          <button className="text-button">
-            View activity <ArrowRight size={17} />
-          </button>
         </div>
 
         <section className="finance-grid">
@@ -438,15 +413,11 @@ function App() {
         <MessageCircle size={20} />
       </button>
 
-      {selected && (
-        <DetailPanel
-          section={selected}
-          onClose={() => setSelected(null)}
-          onAsk={() => {
-            setSelected(null);
-            setCosmoOpen(true);
-          }}
-        />
+      {selected && overview && (
+        <InsightPanel section={selected} overview={overview} onClose={() => setSelected(null)} onAsk={askCosmo} />
+      )}
+      {budgetOpen && (
+        <BudgetPanel customerId={customerId} onClose={() => setBudgetOpen(false)} onAsk={askCosmo} />
       )}
       {cosmoOpen && (
         <CosmoPanel
@@ -458,69 +429,6 @@ function App() {
           onClose={() => setCosmoOpen(false)}
         />
       )}
-    </div>
-  );
-}
-
-function DetailPanel({ section, onClose, onAsk }) {
-  const data = detailData[section];
-  const icons =
-    section === "accounts"
-      ? [PiggyBank, CircleDollarSign, Landmark]
-      : section === "home"
-        ? [Building2, ReceiptText, CircleDollarSign]
-        : [CircleDollarSign, Wrench, CarFront];
-
-  return (
-    <div className="overlay" role="presentation" onMouseDown={onClose}>
-      <aside
-        className="detail-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="detail-title"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="panel-header">
-          <button className="back-button" onClick={onClose}>
-            <ArrowLeft size={18} /> Dashboard
-          </button>
-          <button
-            className="icon-button"
-            onClick={onClose}
-            aria-label="Close details"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <p className="eyebrow">Orbit detail</p>
-        <h2 id="detail-title">{data.heading}</h2>
-        <p className="panel-subheading">{data.subheading}</p>
-        <div className="detail-metric">
-          <strong>{data.metric}</strong>
-          <span>{data.metricLabel}</span>
-        </div>
-        <div className="detail-insights">
-          {data.insights.map(([title, value, description], index) => {
-            const InsightIcon = icons[index];
-            return (
-              <article key={title}>
-                <span>
-                  <InsightIcon size={20} />
-                </span>
-                <div>
-                  <p>{title}</p>
-                  <strong>{value}</strong>
-                  <small>{description}</small>
-                </div>
-                <ChevronRight size={18} />
-              </article>
-            );
-          })}
-        </div>
-        <button className="primary-button" onClick={onAsk}>
-          <Bot size={18} /> Build a plan with Cosmo
-        </button>
-      </aside>
     </div>
   );
 }
