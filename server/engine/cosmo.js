@@ -158,6 +158,19 @@ function fallbackWhatIf(whatIfs) {
   return `Here's what each change does with our pick (${whatIfs.path}):\n${lines.join('\n')}\nWant to try one? Use the Plans or Milestones tab under "Make it yours".`;
 }
 
+// Which backup fits the question (only used when Gemini is unavailable)
+const isCarQuestion = (message) => /\b(car|path|lease|loan|trade|keep|option|recommend|best|next move)\b/i.test(message);
+const isAffordQuestion = (message) => /\b(afford|trip|travel|vacation|go to|buy|spend)\b/i.test(message);
+
+// Backup for everything else: never answers a different question than the one asked
+function fallbackGeneral(message) {
+  if (isAffordQuestion(message))
+    return 'Happy to check that! About how much would it cost? Ask me something like ' +
+      '**"Can I afford a $3,000 trip?"** and I\'ll run it against your savings and cushion.';
+  return "I'm having trouble thinking that one through right now. Try again in a moment, or ask me about " +
+    'your car paths, a what-if like pushing a goal back, or whether you can afford something (with a dollar amount).';
+}
+
 const isWhatIf = (message) => /what if|push|delay|postpone|hold off|skip|wait|later|next year/i.test(message);
 
 // history = [{ role: 'user' | 'cosmo', text: '...' }]
@@ -165,7 +178,8 @@ export async function askCosmo({ customer, overview, sim, message, history = [],
   const key = process.env.GEMINI_API_KEY;
   const backup = afford ? fallbackAfford(customer, afford)
     : whatIfs && isWhatIf(message) ? fallbackWhatIf(whatIfs)
-    : fallbackAnswer(customer, sim);
+    : isCarQuestion(message) ? fallbackAnswer(customer, sim)
+    : fallbackGeneral(message);
   if (!key) return { reply: backup, source: 'fallback' };
 
   const contents = [
