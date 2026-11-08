@@ -10,6 +10,8 @@ const DEFAULTS = {
   surpriseRepair: 0, // stress test: unexpected bill ($)
   goalAmount: 0,
   goalMonths: 0,
+  monthlyIncome: null,   // what-if: projected monthly income (null = their real income)
+  plans: null,           // their planned events (null = the plans saved for this customer)
 };
 
 const YEARS = 5;
@@ -98,7 +100,7 @@ function healthScores({
 
 // ---------- one option ----------
 function simulateOption(customer, option, a) {
-  const income = customer.monthlyIncome;
+  const income = a.monthlyIncome;   // projected income (defaults to their real income)
   const baseExpenses =
     customer.housing + customer.utilities + customer.otherExpenses;
   const cardMin = cardMinimum(customer.cardBalance);
@@ -141,15 +143,14 @@ function simulateOption(customer, option, a) {
 
   // 5-year true cost = everything you pay + the trade-in you give up - what the car is worth after
   const runningCosts = (option.insurance + option.maintenance + gas) * MONTHS;
+  // Big service items on this path's schedule (tires, brakes, major services)
+  const services = (option.serviceEvents || []).filter((e) => e.month >= 1 && e.month <= MONTHS);
+  const serviceTotal = services.reduce((total, e) => total + e.amount, 0);
   const cashOut =
-    (option.upfront || 0) + carPayment * paymentMonths + runningCosts;
+    (option.upfront || 0) + carPayment * paymentMonths + runningCosts + serviceTotal;
   // "keep" also uses up the car you already own, so count its value like a trade-in
   const netCost =
     cashOut + (option.tradeIn || 0) + (option.type === "keep" ? option.valueToday || 0 : 0) - (option.valueIn5Years || 0);
-
-  // Stress test: surprise bill + months without income come out of savings
-  const stressHit = a.surpriseRepair + a.incomeGapMonths * monthlyExpenses;
-  const savingsAfterStress = savingsAfter - stressHit;
 
   // ---- What you'd own over time: savings + car value - what you still owe ----
   const valueToday = option.valueToday ?? option.price ?? 0;   // a new car is worth its price on day one
@@ -164,8 +165,9 @@ function simulateOption(customer, option, a) {
 
   let balance = savingsAfter;                 // cash in savings
   let loanBalance = financed;                 // what's still owed on the car
-  const point = (month) => ({
+  const point = (month, events = []) => ({
     month,
+    events,                                   // what happens this month (plans, services)
     balance: round(balance),
     carValue: round(carValueAt(month)),
     loanBalance: round(loanBalance),
@@ -174,19 +176,33 @@ function simulateOption(customer, option, a) {
 
   const forecast = [point(0)];
   for (let month = 1; month <= MONTHS; month += 1) {
-    const monthlyIncome = month <= a.incomeGapMonths ? 0 : income;
+    const monthlyIncome = month <= a.incomeGapMonths ? 0 : income;   // (incomeGapMonths kept for older callers)
     const payment = month <= paymentMonths ? carPayment : 0;
     const seasonal = pattern ? pattern[(startMonth + month) % 12] : 1;   // e.g. December runs higher
     const monthlyCost =
       baseExpenses + customer.otherExpenses * (seasonal - 1) +   // everyday spending, adjusted by season
       (carMonthly - carPayment) + payment + cardMin +
       (month === 1 ? a.surpriseRepair : 0);
-    balance += monthlyIncome - monthlyCost;
+    // Their plans repeat every year in that calendar month; services happen once on this path's schedule
+    const calendarMonth = (startMonth + month) % 12;
+    const plansNow = a.plans.filter((plan) => plan.month === calendarMonth);
+    const servicesNow = services.filter((e) => e.month === month);
+    const events = [
+      ...plansNow.map((plan) => ({ label: plan.label, amount: plan.amount })),
+      ...servicesNow.map((e) => ({ label: e.label, amount: -e.amount })),
+      ...(month === 1 && a.surpriseRepair > 0 ? [{ label: "One-time expense", amount: -a.surpriseRepair }] : []),
+    ];
+    balance += monthlyIncome - monthlyCost +
+      plansNow.reduce((total, plan) => total + plan.amount, 0) -
+      servicesNow.reduce((total, e) => total + e.amount, 0);
     if (option.type === "finance" && month <= paymentMonths) {
       loanBalance = Math.max(0, loanBalance * (1 + monthlyRate) - carPayment);   // interest first, then payment
     }
-    forecast.push(point(month));
+    forecast.push(point(month, events));
   }
+
+  // Does savings ever drop below $0? (the honest version of "does this path hold up")
+  const lowPoint = forecast.reduce((low, p) => (p.balance < low.balance ? p : low), forecast[0]);
 
   //when saving more than goal
   let goal = null;
@@ -232,9 +248,11 @@ function simulateOption(customer, option, a) {
     health,
     forecast,
     goal,
+    nextService: services[0] ? { ...services[0], when: monthYear(services[0].month) } : null,
     stress: {
-      savingsAfter: round(savingsAfterStress),
-      holdsUp: savingsAfterStress >= 0,
+      savingsAfter: lowPoint.balance,          // lowest savings balance in the forecast
+      lowMonth: lowPoint.month,
+      holdsUp: lowPoint.balance >= 0,
     },
   };
 }
@@ -242,13 +260,15 @@ function simulateOption(customer, option, a) {
 // ---------- the whole simulation ----------
 export function simulate(customer, assumptions = {}) {
   const a = { ...DEFAULTS, ...assumptions };
+  a.monthlyIncome = a.monthlyIncome ?? customer.monthlyIncome;
+  a.plans = a.plans ?? customer.plans ?? [];
   const results = customer.options.map((o) => simulateOption(customer, o, a));
 
   // Recommendation: lowest 5-year true cost among options you can afford monthly.
   // If the stress test is on, prefer options that survive it.
-  const stressOn = a.incomeGapMonths > 0 || a.surpriseRepair > 0;
+  // Prefer paths where savings never drop below $0.
   let pool = results.filter((r) => r.leftoverPerMonth >= 0);
-  if (stressOn && pool.some((r) => r.stress.holdsUp))
+  if (pool.some((r) => r.stress.holdsUp))
     pool = pool.filter((r) => r.stress.holdsUp);
   if (pool.length === 0) pool = results;
   const best = pool.reduce((x, y) =>
@@ -276,15 +296,23 @@ export function simulate(customer, assumptions = {}) {
       parts.push(`Saves on gas (${money(r.monthly.gas)}/mo).`);
     if (r.leftoverPerMonth < 0)
       parts.push("Costs more than you bring in each month.");
-    if (stressOn && !r.stress.holdsUp)
-      parts.push("Would drain your savings in the stress test.");
+    if (!r.stress.holdsUp)
+      parts.push(`Savings dip below $0 around ${monthYear(r.stress.lowMonth)}.`);
     r.why = parts.join(" ");
     r.recommended = r.id === best.id;
   }
 
+  // "A small shift goes a long way": trim their biggest planned expense by a third
+  const biggest = a.plans.filter((plan) => plan.amount < 0).sort((x, y) => x.amount - y.amount)[0];
+  const trim = biggest ? Math.round(Math.abs(biggest.amount) / 3 / 50) * 50 : 0;
+  const smallShift = biggest && trim > 0
+    ? `Trimming ${biggest.label.toLowerCase()} by ${money(trim)} would put you ${money(trim)} further ahead every year.`
+    : null;
+
   return {
     customerId: customer.id,
     assumptions: a,
+    smallShift,
     options: results,
     recommendation: {
       optionId: best.id,
@@ -431,6 +459,13 @@ function nextStepFor(option, customer) {
 }
 
 // ---------- "Coming up" + nudges for the home screen ----------
+// "March 2027" for a number of months from now
+function monthYear(monthsFromNow) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + monthsFromNow);
+  return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+}
+
 function monthName(monthsFromNow) {
   const d = new Date();
   d.setMonth(d.getMonth() + monthsFromNow);

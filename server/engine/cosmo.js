@@ -27,6 +27,11 @@ function buildData(customer, overview, sim, afford) {
   lines.push(`Current car: ${overview.vehicle.model}, ${overview.vehicle.status}.`);
   lines.push(`Today's health: ${overview.health.map((h) => `${h.label} ${h.display} (${h.status})`).join('; ')}.`);
   lines.push(`Assumptions: gas $${sim.assumptions.gasPrice}/gal, income gap ${sim.assumptions.incomeGapMonths} months, surprise repair $${sim.assumptions.surpriseRepair}.`);
+  if (sim.assumptions.plans?.length) {
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    lines.push(`Their yearly plans: ${sim.assumptions.plans.map((p) => `${p.label} ${p.amount >= 0 ? '+' : '-'}$${Math.abs(p.amount)} in ${MONTHS[p.month]}`).join('; ')}.`);
+  }
+  lines.push(`Projected monthly income in this scenario: $${sim.assumptions.monthlyIncome}.`);
   lines.push('Options:');
   for (const o of sim.options) {
     lines.push(
@@ -34,7 +39,9 @@ function buildData(customer, overview, sim, afford) {
       `(payment $${o.monthly.carPayment}, insurance $${o.monthly.insurance}, maintenance $${o.monthly.maintenance}, gas $${o.monthly.gas}); ` +
       `upfront $${o.upfront}; left over $${o.leftoverPerMonth}/mo; 5-year true cost $${o.fiveYear.netCost}; ` +
       (o.loan ? `loan $${o.loan.financed} at ${o.loan.apr}% for ${o.loan.termMonths} months, total interest $${o.loan.totalInterest}; ` : '') +
-      `perk: ${o.perk || 'none'}; savings after stress test $${o.stress.savingsAfter}. Why: ${o.why}`
+      `perk: ${o.perk || 'none'}; ` +
+      (o.nextService ? `next big service: ${o.nextService.label} ($${o.nextService.amount}) in ${o.nextService.when}; ` : '') +
+      `lowest savings point in the forecast $${o.stress.savingsAfter}. Why: ${o.why}`
     );
   }
   lines.push(`Recommendation: ${sim.recommendation.headline}. Next step: ${sim.recommendation.nextStep}`);

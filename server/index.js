@@ -23,9 +23,23 @@ function loadCustomers() {
 // Only accept the stress-test numbers we expect (ignore anything weird)
 function cleanAssumptions(assumptions) {
   const clean = {};
-  for (const key of ['gasPrice', 'incomeGapMonths', 'surpriseRepair', 'goalAmount', 'goalMonths']) {
+  for (const key of ['gasPrice', 'incomeGapMonths', 'surpriseRepair', 'goalAmount', 'goalMonths', 'monthlyIncome']) {
     const n = Number(assumptions?.[key]);
     if (assumptions?.[key] !== undefined && !Number.isNaN(n) && n >= 0) clean[key] = n;
+  }
+  // Plans the user added/edited: [{ label, amount (+income / -expense), month (0 = Jan ... 11 = Dec) }]
+  if (Array.isArray(assumptions?.plans)) {
+    clean.plans = assumptions.plans
+      .slice(0, 12)
+      .map((plan) => ({
+        label: String(plan?.label ?? '').trim().slice(0, 40),
+        amount: Number(plan?.amount),
+        month: Number(plan?.month),
+      }))
+      .filter((plan) =>
+        plan.label &&
+        Number.isFinite(plan.amount) && Math.abs(plan.amount) <= 100000 &&
+        Number.isInteger(plan.month) && plan.month >= 0 && plan.month <= 11);
   }
   return clean;
 }

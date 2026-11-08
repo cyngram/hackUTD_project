@@ -17,7 +17,20 @@
     "cardBalance": 2100,
     "cardLimit": 5000,
     "dailyCommuteMiles": 52,
-    "spendingPattern": [0.90, 0.85, 0.95, 1.00, 1.00, 1.05, 1.15, 1.05, 0.95, 0.95, 1.00, 1.15],
+    "spendingPattern": [
+      0.9,
+      0.85,
+      0.95,
+      1.0,
+      1.0,
+      1.05,
+      1.15,
+      1.05,
+      0.95,
+      0.95,
+      1.0,
+      1.15
+    ],
     "vehicle": {
       "model": "2023 Toyota Corolla",
       "type": "lease",
@@ -42,7 +55,24 @@
         "insurance": 140,
         "maintenance": 60,
         "valueIn5Years": 9000,
-        "perk": "Keep the car you already know"
+        "perk": "Keep the car you already know",
+        "serviceEvents": [
+          {
+            "label": "40k-mile service",
+            "month": 4,
+            "amount": 450
+          },
+          {
+            "label": "New tires",
+            "month": 28,
+            "amount": 700
+          },
+          {
+            "label": "60k-mile service",
+            "month": 40,
+            "amount": 600
+          }
+        ]
       },
       {
         "id": "hybrid",
@@ -57,7 +87,19 @@
         "insurance": 150,
         "maintenance": 0,
         "valueIn5Years": 15000,
-        "perk": "2 years of included maintenance"
+        "perk": "2 years of included maintenance",
+        "serviceEvents": [
+          {
+            "label": "First service after included maintenance",
+            "month": 25,
+            "amount": 300
+          },
+          {
+            "label": "New tires",
+            "month": 40,
+            "amount": 750
+          }
+        ]
       },
       {
         "id": "release",
@@ -69,7 +111,25 @@
         "insurance": 140,
         "maintenance": 0,
         "valueIn5Years": 0,
-        "perk": "Always in a new car"
+        "perk": "Always in a new car",
+        "serviceEvents": []
+      }
+    ],
+    "plans": [
+      {
+        "label": "Tax refund",
+        "amount": 900,
+        "month": 2
+      },
+      {
+        "label": "Summer trip",
+        "amount": -1200,
+        "month": 6
+      },
+      {
+        "label": "Holiday gifts",
+        "amount": -600,
+        "month": 11
       }
     ]
   },
@@ -91,7 +151,20 @@
     "cardBalance": 600,
     "cardLimit": 15000,
     "dailyCommuteMiles": 18,
-    "spendingPattern": [0.90, 0.88, 0.95, 1.00, 1.02, 1.10, 1.15, 1.10, 0.95, 0.92, 0.98, 1.05],
+    "spendingPattern": [
+      0.9,
+      0.88,
+      0.95,
+      1.0,
+      1.02,
+      1.1,
+      1.15,
+      1.1,
+      0.95,
+      0.92,
+      0.98,
+      1.05
+    ],
     "vehicle": {
       "model": "2016 Toyota Camry",
       "type": "owned",
@@ -113,7 +186,29 @@
         "insurance": 110,
         "maintenance": 90,
         "valueIn5Years": 4000,
-        "perk": "No new loan"
+        "perk": "No new loan",
+        "serviceEvents": [
+          {
+            "label": "New tires",
+            "month": 6,
+            "amount": 800
+          },
+          {
+            "label": "Brake service",
+            "month": 18,
+            "amount": 600
+          },
+          {
+            "label": "150k-mile service",
+            "month": 36,
+            "amount": 900
+          },
+          {
+            "label": "Water pump and belts",
+            "month": 48,
+            "amount": 1100
+          }
+        ]
       },
       {
         "id": "sienna",
@@ -128,7 +223,19 @@
         "insurance": 170,
         "maintenance": 0,
         "valueIn5Years": 22000,
-        "perk": "Room for the whole family + 2 years of included maintenance"
+        "perk": "Room for the whole family + 2 years of included maintenance",
+        "serviceEvents": [
+          {
+            "label": "First service after included maintenance",
+            "month": 25,
+            "amount": 400
+          },
+          {
+            "label": "New tires",
+            "month": 44,
+            "amount": 900
+          }
+        ]
       },
       {
         "id": "rav4",
@@ -143,7 +250,41 @@
         "insurance": 135,
         "maintenance": 40,
         "valueIn5Years": 15000,
-        "perk": "Certified warranty"
+        "perk": "Certified warranty",
+        "serviceEvents": [
+          {
+            "label": "New tires",
+            "month": 30,
+            "amount": 700
+          },
+          {
+            "label": "Major service",
+            "month": 42,
+            "amount": 450
+          }
+        ]
+      }
+    ],
+    "plans": [
+      {
+        "label": "Tax refund",
+        "amount": 2200,
+        "month": 2
+      },
+      {
+        "label": "Kids' summer camp",
+        "amount": -1500,
+        "month": 5
+      },
+      {
+        "label": "Family vacation",
+        "amount": -3000,
+        "month": 6
+      },
+      {
+        "label": "Holiday gifts",
+        "amount": -1200,
+        "month": 11
       }
     ]
   }

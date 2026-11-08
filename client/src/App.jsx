@@ -97,6 +97,7 @@ function App() {
   const [customerId, setCustomerId] = useState("maria");   // which account is showing
   const [overview, setOverview] = useState(null);          // accounts, home, vehicle, credit, health
   const [moments, setMoments] = useState(null);            // "Coming up" + nudges
+  const [paths, setPaths] = useState(null);                // path results, loaded early so the path page opens instantly
   const [treatPick, setTreatPick] = useState(null);        // which "treat yourself" chip is selected
   const [pathsOpen, setPathsOpen] = useState(false);       // is the path explorer open?
   const [loadError, setLoadError] = useState("");
@@ -111,6 +112,7 @@ function App() {
     let stale = false;                 // becomes true if the user switches again before this finishes
     setOverview(null);
     setMoments(null);
+    setPaths(null);
     Promise.all([
       api(`/api/customers/${customerId}/overview`),
       api(`/api/customers/${customerId}/moments`),
@@ -121,6 +123,14 @@ function App() {
         setMoments(m);
       })
       .catch((e) => !stale && setLoadError(e.message));
+    // Load the paths in the background, so "Explore your paths" opens instantly
+    api("/api/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerId }),
+    })
+      .then((sim) => !stale && setPaths(sim))
+      .catch(() => {});                // the path page will fetch again if this fails
     return () => { stale = true; };    // React runs this cleanup before the next load
   }, [customerId]);
 
@@ -250,6 +260,18 @@ function App() {
         </div>
       </header>
 
+      {pathsOpen ? (
+        <PathExplorer
+          key={`${customerId}-${treatPick?.label ?? "paths"}`}
+          customerId={customerId}
+          comingUp={moments?.comingUp?.[0]}
+          treat={treatPick}
+          baseIncome={overview?.monthlyIncome}
+          initialSim={treatPick?.amount ? null : paths}
+          onClose={() => { setPathsOpen(false); setTreatPick(null); }}
+          onAskCosmo={() => setCosmoOpen(true)}
+        />
+      ) : (
       <main>
         <section className="welcome-row">
           <div>
@@ -407,6 +429,7 @@ function App() {
           })}
         </section>
       </main>
+      )}
 
       <button className="cosmo-launcher" onClick={() => setCosmoOpen(true)}>
         <span className="cosmo-avatar">
@@ -427,16 +450,6 @@ function App() {
             setSelected(null);
             setCosmoOpen(true);
           }}
-        />
-      )}
-      {pathsOpen && (
-        <PathExplorer
-          key={`${customerId}-${treatPick?.label ?? "paths"}`}
-          customerId={customerId}
-          comingUp={moments?.comingUp?.[0]}
-          treat={treatPick}
-          onClose={() => { setPathsOpen(false); setTreatPick(null); }}
-          onAskCosmo={() => { setPathsOpen(false); setCosmoOpen(true); }}
         />
       )}
       {cosmoOpen && <CosmoPanel onClose={() => setCosmoOpen(false)} />}

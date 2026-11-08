@@ -1,24 +1,67 @@
-import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowLeft, Bot, CheckCircle2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  CarFront,
+  CheckCircle2,
+  Plus,
+  RefreshCw,
+  Sparkles,
+  Wrench,
+  X,
+} from "lucide-react";
 import { api } from "../lib/api";
 import { money } from "../lib/format";
-import ForecastChart from "./ForecastChart";
+import ForecastChart, { colorFor } from "./ForecastChart";
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const PATH_ICONS = { finance: CarFront, lease: RefreshCw, keep: Wrench };
+const RANGES = [
+  { months: 12, label: "1Y" },
+  { months: 24, label: "2Y" },
+  { months: 60, label: "5Y" },
+];
 
 // The what-if sliders. To add one, add a line here (and accept the key in the backend).
 const WHAT_IFS = [
-  { key: "gasPrice", label: "Gas price", min: 2, max: 6, step: 0.1, show: (v) => `$${v.toFixed(2)}/gal` },
-  { key: "incomeGapMonths", label: "Months without income", min: 0, max: 6, step: 1, show: (v) => `${v} mo` },
-  { key: "surpriseRepair", label: "One-time expense (repair or treat)", min: 0, max: 5000, step: 100, show: (v) => money(v) },
+  { key: "gasPrice", label: "Gas price", min: () => 2, max: () => 6, step: 0.1, show: (v) => `$${v.toFixed(2)}/gal` },
+  {
+    key: "monthlyIncome",
+    label: "Monthly income",
+    min: () => 0,
+    max: (income) => Math.round((income * 2) / 100) * 100,
+    step: 100,
+    show: (v) => `${money(v)}/mo`,
+  },
+  { key: "surpriseRepair", label: "One-time expense", min: () => 0, max: () => 5000, step: 100, show: (v) => money(v) },
 ];
 
-export default function PathExplorer({ customerId, comingUp, treat, onClose, onAskCosmo }) {
-  // Only send what the user changed; the backend fills in its own defaults
-  const [whatIfs, setWhatIfs] = useState(treat?.amount ? { surpriseRepair: treat.amount } : {});
-  const [sim, setSim] = useState(null);
-  const [error, setError] = useState("");
+const emptyDraft = () => ({ label: "", amount: "", kind: "expense", month: (new Date().getMonth() + 1) % 12 });
 
-  // Re-run the simulator whenever a slider changes (waits 250 ms so dragging doesn't flood the server)
+export default function PathExplorer({ customerId, comingUp, treat, baseIncome, initialSim, onClose, onAskCosmo }) {
+  // Only send what the user changed; the backend fills in its own defaults (gas price, their income, their plans)
+  const [whatIfs, setWhatIfs] = useState(treat?.amount ? { surpriseRepair: treat.amount } : {});
+  const [sim, setSim] = useState(initialSim ?? null);   // starts with the results the home screen already loaded
+  const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState(null);   // null = our pick
+  const [range, setRange] = useState(60);
+  const [tab, setTab] = useState("whatifs");
+  const [draft, setDraft] = useState(emptyDraft);
+  const [draftError, setDraftError] = useState("");
+
+  // Start at the top of the page (braces matter: an effect may only return a cleanup function)
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Re-run the simulator whenever something changes (waits 250 ms so dragging doesn't flood the server)
+  const firstRun = useRef(true);
+  useEffect(() => {
+    const isFirst = firstRun.current;
+    firstRun.current = false;
+    if (isFirst && initialSim && Object.keys(whatIfs).length === 0) return;   // already have these results
     let stale = false;
     const timer = setTimeout(() => {
       api("/api/simulate", {
@@ -28,102 +71,220 @@ export default function PathExplorer({ customerId, comingUp, treat, onClose, onA
       })
         .then((data) => !stale && setSim(data))
         .catch((e) => !stale && setError(e.message));
-    }, 250);
+    }, isFirst ? 0 : 250);   // no delay on the first load
     return () => { stale = true; clearTimeout(timer); };
   }, [customerId, whatIfs]);
 
-  const stressOn = (sim?.assumptions.incomeGapMonths ?? 0) > 0 || (sim?.assumptions.surpriseRepair ?? 0) > 0;
+  const plans = whatIfs.plans ?? sim?.assumptions.plans ?? [];
+  const setPlans = (next) => setWhatIfs((prev) => ({ ...prev, plans: next }));
+
+  const addPlan = (e) => {
+    e.preventDefault();
+    const amount = Number(draft.amount);
+    if (!draft.label.trim()) return setDraftError("Give your plan a name.");
+    if (!amount || amount <= 0) return setDraftError("Enter an amount above $0.");
+    setPlans([...plans, { label: draft.label.trim(), amount: draft.kind === "expense" ? -amount : amount, month: Number(draft.month) }]);
+    setDraft(emptyDraft());
+    setDraftError("");
+  };
+
+  const selected = sim?.options.find((o) => o.id === (selectedId ?? sim.recommendation.optionId));
+
+  // Big number + how it compares with the other paths at the end of the chosen range
+  let endValue = 0;
+  let delta = null;
+  if (selected) {
+    endValue = selected.forecast[range].net;
+    const others = sim.options.filter((o) => o.id !== selected.id);
+    const bestOther = others.reduce((a, b) => (b.forecast[range].net > a.forecast[range].net ? b : a), others[0]);
+    const gap = endValue - bestOther.forecast[range].net;
+    delta = gap >= 0
+      ? { up: true, text: `${money(gap)} ahead of the next path` }
+      : { up: false, text: `${money(-gap)} behind ${bestOther.label.toLowerCase()}` };
+  }
 
   return (
-    <div className="overlay" role="presentation" onMouseDown={onClose}>
-      <aside
-        className="detail-panel path-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="paths-title"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="panel-header">
-          <button className="back-button" onClick={onClose}>
-            <ArrowLeft size={18} /> Dashboard
-          </button>
-          <button className="icon-button" onClick={onClose} aria-label="Close paths">
-            <X size={20} />
-          </button>
-        </div>
+    <main className="path-page">
+      <button className="back-link" onClick={onClose}>
+        <ArrowLeft size={17} /> Dashboard
+      </button>
+      <p className="eyebrow">{comingUp?.title ?? "Your next chapter"}</p>
+      <div className="path-page-head">
+        <h1>Pick a path to explore</h1>
+        <p>You can change direction anytime. Nothing here is locked in.</p>
+      </div>
+      {treat?.amount > 0 && (
+        <p className="path-note">Including {treat.label.toLowerCase()} ({money(treat.amount)}) as a one-time expense.</p>
+      )}
 
-        <p className="eyebrow">{comingUp?.when ?? "Your paths"}</p>
-        <h2 id="paths-title">{comingUp?.title ?? "Where do you want to go?"}</h2>
-        {treat?.amount > 0 && (
-          <p className="panel-subheading">
-            Showing {treat.label.toLowerCase()} ({money(treat.amount)}) as a one-time expense.
-          </p>
-        )}
+      {!sim || !selected ? (
+        <p className="path-note">{error || "Mapping your paths…"}</p>
+      ) : (
+        <>
+          <section className="path-choices">
+            {sim.options.map((o, i) => {
+              const Icon = PATH_ICONS[o.type] ?? CarFront;
+              const active = o.id === selected.id;
+              return (
+                <button
+                  key={o.id}
+                  className={`path-choice ${active ? "active" : ""}`}
+                  onClick={() => setSelectedId(o.id)}
+                  aria-pressed={active}
+                >
+                  <span className="path-choice-icon" style={{ color: colorFor(i) }}>
+                    <Icon size={20} />
+                  </span>
+                  <span className="path-choice-copy">
+                    <strong>{o.label}</strong>
+                    <small>
+                      {o.recommended ? "Our pick · " : ""}
+                      {money(o.monthly.totalCar)}/mo · 5-year cost {money(o.fiveYear.netCost)}
+                    </small>
+                    <small>
+                      {o.nextService
+                        ? `Next service: ${o.nextService.label.toLowerCase()}, ${o.nextService.when} · ${money(o.nextService.amount)}`
+                        : "No big service expected"}
+                    </small>
+                    {!o.stress.holdsUp && (
+                      <small className="path-dip">
+                        <AlertTriangle size={13} /> Savings dip below $0
+                      </small>
+                    )}
+                  </span>
+                  {active ? <CheckCircle2 size={20} className="path-check" /> : <ArrowRight size={18} className="path-arrow" />}
+                </button>
+              );
+            })}
+          </section>
 
-        {!sim ? (
-          <p className="panel-subheading">{error || "Mapping your paths…"}</p>
-        ) : (
-          <>
-            <div className="path-grid">
-              {sim.options.map((o) => (
-                <article key={o.id} className={`path-card ${o.recommended ? "recommended" : ""}`}>
-                  {o.recommended && <span className="pick-badge">Our pick</span>}
-                  <h3>{o.label}</h3>
-                  <p className="path-monthly">{money(o.monthly.totalCar)}<span>/mo</span></p>
-                  <p className="path-meta">5-year true cost {money(o.fiveYear.netCost)}</p>
-                  <p className="path-why">{o.why}</p>
-                  {o.perk && <p className="path-perk">{o.perk}</p>}
-                  {stressOn && (
-                    <p className={o.stress.holdsUp ? "path-ok" : "path-warn"}>
-                      {o.stress.holdsUp ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
-                      {o.stress.holdsUp
-                        ? `Holds up: ${money(o.stress.savingsAfter)} left`
-                        : `Savings run out (${money(o.stress.savingsAfter)})`}
-                    </p>
-                  )}
-                </article>
-              ))}
+          <section className="path-box">
+            <div className="path-box-head">
+              <div>
+                <p className="eyebrow">What you'd own</p>
+                <h2>{selected.label}</h2>
+                <p className="path-sub">Savings + car value − what's left on the loan, including your plans.</p>
+              </div>
+              <div className="segmented" role="group" aria-label="Time range">
+                {RANGES.map((r) => (
+                  <button key={r.label} className={range === r.months ? "active" : ""} onClick={() => setRange(r.months)}>
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="path-total">
+              <strong>{money(endValue)}</strong>
+              <span className={`path-delta ${delta.up ? "up" : "down"}`}>{delta.text}</span>
+            </div>
+            <ForecastChart options={sim.options} selectedId={selected.id} months={range} />
+            <p className="path-why">{selected.why}</p>
+            {sim.smallShift && (
+              <div className="small-shift">
+                <Sparkles size={18} />
+                <p><strong>A small shift goes a long way.</strong> {sim.smallShift}</p>
+              </div>
+            )}
+          </section>
+
+          <section className="path-box">
+            <div className="path-box-head">
+              <div>
+                <p className="eyebrow">Make it yours</p>
+                <h2>Adjust and watch your paths respond</h2>
+              </div>
+              <div className="segmented" role="tablist">
+                <button className={tab === "whatifs" ? "active" : ""} onClick={() => setTab("whatifs")}>What-ifs</button>
+                <button className={tab === "plans" ? "active" : ""} onClick={() => setTab("plans")}>Plans</button>
+              </div>
             </div>
 
-            <section className="panel-block">
-              <p className="eyebrow">What you'd own over the next 2 years (savings + car value − loan)</p>
-              <ForecastChart options={sim.options} />
-            </section>
-
-            <section className="panel-block">
-              <p className="eyebrow">What if…</p>
-              {WHAT_IFS.map((w) => {
-                const value = whatIfs[w.key] ?? sim.assumptions[w.key];   // follow your finger immediately
-                return (
-                  <label className="what-if" key={w.key}>
-                    <span>{w.label}</span>
-                    <input
-                      type="range"
-                      min={w.min}
-                      max={w.max}
-                      step={w.step}
-                      value={value}
-                      onChange={(e) => setWhatIfs((prev) => ({ ...prev, [w.key]: Number(e.target.value) }))}
-                    />
-                    <output>{w.show(value)}</output>
-                  </label>
-                );
-              })}
-            </section>
-
-            <section className="next-step">
-              <CheckCircle2 size={22} />
-              <div>
-                <strong>{sim.recommendation.headline}</strong>
-                <p>Next step: {sim.recommendation.nextStep}</p>
+            {tab === "whatifs" ? (
+              <div className="what-if-grid">
+                {WHAT_IFS.map((w) => {
+                  const value = whatIfs[w.key] ?? sim.assumptions[w.key];   // follow your finger immediately
+                  const income = baseIncome ?? sim.assumptions.monthlyIncome;
+                  return (
+                    <label className="what-if-item" key={w.key}>
+                      <span className="what-if-top">
+                        <span>{w.label}</span>
+                        <output>{w.show(value)}</output>
+                      </span>
+                      <input
+                        type="range"
+                        min={w.min(income)}
+                        max={w.max(income)}
+                        step={w.step}
+                        value={value}
+                        onChange={(e) => setWhatIfs((prev) => ({ ...prev, [w.key]: Number(e.target.value) }))}
+                      />
+                    </label>
+                  );
+                })}
               </div>
-              <button className="primary-button" onClick={onAskCosmo}>
-                <Bot size={18} /> Ask Cosmo
-              </button>
-            </section>
-          </>
-        )}
-      </aside>
-    </div>
+            ) : (
+              <div>
+                <ul className="plan-list">
+                  {plans.map((plan, i) => (
+                    <li key={`${plan.label}-${i}`}>
+                      <span className="plan-name">{plan.label}</span>
+                      <span className="plan-when">Every {MONTHS[plan.month]}</span>
+                      <span className={plan.amount >= 0 ? "plan-in" : "plan-out"}>
+                        {plan.amount >= 0 ? "+" : "-"}{money(Math.abs(plan.amount))}
+                      </span>
+                      <button
+                        className="icon-button"
+                        aria-label={`Remove ${plan.label}`}
+                        onClick={() => setPlans(plans.filter((_, j) => j !== i))}
+                      >
+                        <X size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <form className="plan-form" onSubmit={addPlan}>
+                  <input
+                    aria-label="Plan name"
+                    placeholder="New laptop"
+                    value={draft.label}
+                    onChange={(e) => { setDraft({ ...draft, label: e.target.value }); setDraftError(""); }}
+                  />
+                  <select aria-label="Expense or income" value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })}>
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                  </select>
+                  <input
+                    aria-label="Amount"
+                    type="number"
+                    min="1"
+                    placeholder="1200"
+                    value={draft.amount}
+                    onChange={(e) => { setDraft({ ...draft, amount: e.target.value }); setDraftError(""); }}
+                  />
+                  <select aria-label="Month" value={draft.month} onChange={(e) => setDraft({ ...draft, month: e.target.value })}>
+                    {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                  </select>
+                  <button type="submit" className="primary-button">
+                    <Plus size={16} /> Add plan
+                  </button>
+                </form>
+                {draftError && <p className="form-error">{draftError}</p>}
+              </div>
+            )}
+          </section>
+
+          <section className="next-step">
+            <CheckCircle2 size={22} />
+            <div>
+              <strong>{sim.recommendation.headline}</strong>
+              <p>Next step: {sim.recommendation.nextStep}</p>
+            </div>
+            <button className="primary-button" onClick={onAskCosmo}>
+              <Bot size={18} /> Ask Cosmo
+            </button>
+          </section>
+        </>
+      )}
+    </main>
   );
 }
