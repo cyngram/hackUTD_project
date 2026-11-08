@@ -24,7 +24,7 @@ function loadCustomers() {
 // Only accept the stress-test numbers we expect (ignore anything weird)
 function cleanAssumptions(assumptions) {
   const clean = {};
-  for (const key of ['gasPrice', 'incomeGapMonths', 'surpriseRepair', 'goalAmount', 'goalMonths', 'monthlyIncome', 'weeklyMiles', 'currentMileage', 'lastOilChangeMiles']) {
+  for (const key of ['gasPrice', 'surpriseRepair', 'monthlyIncome', 'weeklyMiles', 'currentMileage', 'lastOilChangeMiles']) {
     const n = Number(assumptions?.[key]);
     if (assumptions?.[key] !== undefined && !Number.isNaN(n) && n >= 0) clean[key] = n;
   }
@@ -101,7 +101,7 @@ app.get('/api/customers/:id/overview', (req, res) => {
 });
 
 // The simulator: compare every option for one customer
-// Body: { customerId: "maria", assumptions: { gasPrice, incomeGapMonths, surpriseRepair } }
+// Body: { customerId: "maria", assumptions: { gasPrice, monthlyIncome, surpriseRepair, plans, milestones, weeklyMiles, ... } }
 app.post('/api/simulate', (req, res) => {
   const { customerId, assumptions = {} } = req.body || {};
   const customer = loadCustomers().find((c) => c.id === customerId);

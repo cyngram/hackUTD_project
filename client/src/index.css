@@ -1,6 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
 
-
 :root {
   --bg: #f3f5f4;
   --surface: #ffffff;
@@ -366,15 +365,6 @@ main {
   font-size: 0.55em;
   letter-spacing: -1px;
 }
-.positive {
-  color: #9bc7ae;
-  font-size: 13px;
-  font-weight: 700;
-}
-.positive span {
-  color: #bfc5c2;
-  font-weight: 400;
-}
 .orbit-visual {
   position: absolute;
   right: -22px;
@@ -458,22 +448,6 @@ main {
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
-}
-.score {
-  margin-top: 20px;
-  font-family: "Manrope";
-  font-size: 42px;
-  font-weight: 700;
-  letter-spacing: -1.5px;
-}
-.score-change {
-  color: var(--green);
-  font-size: 12px;
-  font-weight: 700;
-}
-.score-change span {
-  color: var(--muted);
-  font-weight: 400;
 }
 .gauge {
   --score: 82%;
@@ -664,37 +638,6 @@ main {
   font-size: 12px;
   font-weight: 700;
 }
-
-.insight-banner {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 18px;
-  margin-top: 20px;
-  padding: 22px 24px;
-  border: 1px solid #bfd2de;
-  border-radius: 20px;
-  background: var(--blue-soft);
-}
-.insight-icon {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 14px;
-  background: var(--blue);
-  color: white;
-}
-.insight-banner h3 {
-  margin: 3px 0 2px;
-  font-family: "Manrope";
-  font-size: 16px;
-}
-.insight-banner p:last-child {
-  color: var(--muted);
-  font-size: 12px;
-}
-.insight-banner button,
 .primary-button {
   display: flex;
   align-items: center;
@@ -790,17 +733,6 @@ main {
   justify-content: space-between;
   margin-bottom: 52px;
 }
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
 .detail-panel h2 {
   margin-top: 7px;
   font-family: "Manrope";
@@ -830,49 +762,6 @@ main {
   margin-top: 4px;
   color: #bdc5c2;
   font-size: 11px;
-}
-.detail-insights {
-  display: grid;
-  gap: 10px;
-}
-.detail-insights article {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 13px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-}
-.detail-insights article > span {
-  width: 39px;
-  height: 39px;
-  display: grid;
-  place-items: center;
-  border-radius: 11px;
-  background: var(--blue-soft);
-  color: var(--blue-deep);
-}
-.detail-insights p {
-  color: var(--muted);
-  font-size: 10px;
-}
-.detail-insights strong,
-.detail-insights small {
-  display: block;
-}
-.detail-insights strong {
-  margin-top: 2px;
-  font-family: "Manrope";
-  font-size: 15px;
-}
-.detail-insights small {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.detail-insights article > svg {
-  color: var(--muted);
 }
 .primary-button {
   width: 100%;
@@ -1072,9 +961,10 @@ main {
   }
   .welcome-row {
     align-items: flex-start;
+    flex-direction: column;
   }
   .month-button {
-    display: none;
+    margin-top: 14px;   /* it opens the budget now, so keep it on phones too */
   }
   .welcome-row h1 {
     font-size: 31px;
@@ -1112,13 +1002,6 @@ main {
   }
   .section-heading .text-button {
     display: none;
-  }
-  .insight-banner {
-    grid-template-columns: auto 1fr;
-    padding: 18px;
-  }
-  .insight-banner button {
-    grid-column: 1 / -1;
   }
   .cosmo-launcher {
     right: 14px;
@@ -1245,42 +1128,7 @@ main {
   font-size: 14px;
   line-height: 1.5;
 }
-
-/* Path explorer */
-.detail-panel.path-panel { width: min(880px, 100%); }
-.path-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-  margin: 24px 0;
-}
-.path-card {
-  position: relative;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface-soft);
-}
-.path-card.recommended { border: 2px solid var(--blue); background: var(--surface); }
-.pick-badge {
-  display: inline-block;
-  margin-bottom: 8px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--blue-soft);
-  color: var(--blue-deep);
-  font-size: 12px;
-  font-weight: 700;
-}
-.path-card h3 { margin: 0 0 10px; font-size: 16px; }
-.path-monthly { margin: 0; font-family: "Manrope"; font-size: 28px; font-weight: 700; }
-.path-monthly span { color: var(--muted); font-size: 14px; font-weight: 500; }
-.path-meta { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
 .path-why { margin: 0; font-size: 13px; line-height: 1.5; }
-.path-perk { margin: 8px 0 0; color: var(--green); font-size: 13px; }
-.path-ok, .path-warn { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; font-size: 13px; }
-.path-ok { color: var(--green); }
-.path-warn { color: #b4553a; }
 
 .panel-block {
   margin: 18px 0;
@@ -1288,17 +1136,6 @@ main {
   border: 1px solid var(--line);
   border-radius: 18px;
 }
-
-.what-if {
-  display: grid;
-  grid-template-columns: 220px 1fr 90px;
-  gap: 12px;
-  align-items: center;
-  margin-top: 12px;
-  font-size: 14px;
-}
-.what-if input { accent-color: var(--blue); }
-.what-if output { text-align: right; font-weight: 600; }
 
 .next-step {
   display: flex;
@@ -1313,15 +1150,8 @@ main {
 .next-step div { flex: 1; }
 .next-step p { margin: 4px 0 0; font-size: 14px; }
 
-@media (max-width: 640px) {
-  .what-if { grid-template-columns: 1fr; }
-  .what-if output { text-align: left; }
-}
-
 /* Path explorer fixes: unsquish the next-step button, easier-to-grab sliders */
 .next-step .primary-button { width: auto; flex: 0 0 auto; }
-.what-if input[type="range"] { height: 28px; cursor: grab; }
-.what-if input[type="range"]:active { cursor: grabbing; }
 
 /* ---------- Path page (full page) ---------- */
 .path-page {

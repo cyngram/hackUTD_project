@@ -6,10 +6,7 @@
 
 const DEFAULTS = {
   gasPrice: 3.5, // $ per gallon
-  incomeGapMonths: 0, // stress test: months with no income
-  surpriseRepair: 0, // stress test: unexpected bill ($)
-  goalAmount: 0,
-  goalMonths: 0,
+  surpriseRepair: 0, // what-if: one-time expense (repair or treat), paid in month 1
   monthlyIncome: null,   // what-if: projected monthly income (null = their real income)
   plans: null,           // their planned events (null = the plans saved for this customer)
   milestones: null,      // life goals: home, trips, new opportunities (null = their saved milestones)
@@ -205,7 +202,6 @@ function simulateOption(customer, option, a) {
 
   const forecast = [point(0)];
   for (let month = 1; month <= MONTHS; month += 1) {
-    const monthlyIncome = month <= a.incomeGapMonths ? 0 : income;   // (incomeGapMonths kept for older callers)
     const payment = month <= paymentMonths ? carPayment : 0;
     const seasonal = pattern ? pattern[(startMonth + month) % 12] : 1;   // e.g. December runs higher
     const monthlyCost =
@@ -222,7 +218,7 @@ function simulateOption(customer, option, a) {
       ...servicesNow.map((e) => ({ label: e.label, amount: -e.amount })),
       ...(month === 1 && a.surpriseRepair > 0 ? [{ label: "One-time expense", amount: -a.surpriseRepair }] : []),
     ];
-    balance += monthlyIncome - monthlyCost +
+    balance += income - monthlyCost +
       plansNow.reduce((total, plan) => total + plan.amount, 0) -
       servicesNow.reduce((total, e) => total + e.amount, 0);
     if (option.type === "finance" && month <= paymentMonths) {
@@ -255,19 +251,6 @@ function simulateOption(customer, option, a) {
       };
     });
 
-  //when saving more than goal
-  let goal = null;
-  if (a.goalAmount > 0) {
-    const start = forecast[0].balance;
-    const hit = forecast.find((point) => point.balance - start >= a.goalAmount);
-    goal = {
-      amount: a.goalAmount,
-      months: a.goalMonths,
-      reachedMonth: hit ? hit.month : null,      // null = not within 5 years
-      onTrack: hit ? hit.month <= a.goalMonths : false,
-    };
-  }
-
   return {
     id: option.id,
     type: option.type,
@@ -298,7 +281,6 @@ function simulateOption(customer, option, a) {
     },
     health,
     forecast,
-    goal,
     milestones,
     nextService: services[0] ? { ...services[0], when: monthYear(services[0].month) } : null,
     stress: {

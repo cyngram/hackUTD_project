@@ -1,50 +1,43 @@
-# Orbit API (for the frontend)
+# Orbit API
 
-All routes start with `/api`. In React, call them with `fetch('/api/...')`.
+All routes start with `/api`. In React: `fetch('/api/...')`. Money is in whole dollars, already rounded.
+Customers: `maria` and `jordan`.
 
-## GET /api/customers
-The two demo customers (for the picker cards).
-Useful fields: `id`, `name`, `shortName`, `age`, `household`, `story`, `vehicle.model`.
+## Home screen
+| Route | Returns |
+|---|---|
+| `GET /customers` | The demo accounts (name, story, household, vehicle, plans, milestones) |
+| `GET /customers/:id/overview` | `sections` (Accounts, Home, Vehicles cards), `creditScore` (value, label, utilization, payDownTo30), `health` (4 indicators), monthly income and expenses |
+| `GET /customers/:id/moments` | `comingUp` (the next big moment), `nudges` (trend + treat), `cosmoPrompt` |
+| `GET /customers/:id/budget` | Next 12 months: income, spending by category, left over, plans that month; `avgSpending`, `busiest` |
 
-## GET /api/customers/:id/overview
-"Today" dashboard for one customer (`maria` or `jordan`). Matches the dashboard boxes:
-- `accounts`: list of { label, amount, note? }  -> Accounts box (Checking, Savings, Credit card)
-- `home`: list of { label, amount, note }        -> Home box (Rent or Mortgage, Utilities)
-- `vehicle`: { model, status, mileage, items: [{ label, amount, note }] } -> Vehicles box
-- `creditScore`: { value, status, label }        -> the big credit score gauge
-- `monthlyIncome`, `monthlyExpenses`, `breakdown`
-- `health`: list of 4 gauges, each { label, display, status, tip }
-  - status is "strong" (green), "okay" (yellow) or "low" (red)
+## Paths (the simulator)
+`POST /simulate` with `{ customerId, assumptions }`. Every assumption is optional; the server fills in the customer's real values.
 
-## POST /api/simulate
-Compares every option for one customer.
+| Assumption | Meaning |
+|---|---|
+| `gasPrice` | $ per gallon |
+| `monthlyIncome` | Projected monthly income |
+| `surpriseRepair` | One-time expense in month 1 (a repair or a treat) |
+| `plans` | `[{ label, amount (+income / -expense), month (0 = Jan), repeat (true = every year) }]` |
+| `milestones` | `[{ label, kind (home / trip / opportunity / goal), amount, targetMonth (months from now) }]` |
+| `weeklyMiles`, `currentMileage`, `lastOilChangeMiles` | Driving details that set the service schedule |
 
-Body:
-```json
-{ "customerId": "maria", "assumptions": { "gasPrice": 2.8, "incomeGapMonths": 0, "surpriseRepair": 0 } }
-```
-(`assumptions` is optional. Use it for the stress-test sliders.)
+Returns `recommendation` (`headline`, `nextStep`), `smallShift` (a tip), `assumptions` (the values used) and `options`, one per path:
+`label`, `recommended`, `why`, `monthly` (car payment, insurance, maintenance, gas, total), `fiveYear` (cash out, car value after, true cost),
+`forecast` (61 months of `{ month, balance, carValue, loanBalance, net, events }`), `milestones` (status per goal),
+`nextService`, `stress` (lowest savings point, `holdsUp`).
 
-Returns:
-- `recommendation`: { optionId, headline, reason, nextStep }  -> the big "our pick" card
-- `options`: one entry per choice, each with
-  - `label`, `perk`, `why`, `recommended` (true/false)
-  - `monthly`: { carPayment, insurance, maintenance, gas, totalCar }
-  - `upfront`, `leftoverPerMonth`
-  - `fiveYear`: { cashOut, carValueAfter, netCost }
-  - `health`: same 4 gauges as overview
-  - `stress`: { savingsAfter, holdsUp }
-  - `loan`: { financed, apr, termMonths, totalInterest } or null
+## Cosmo
+`POST /chat` with `{ customerId, message, history: [{ role: 'user' | 'cosmo', text }], assumptions }`.
+Returns `{ reply, source: 'gemini' | 'fallback' }`. Cosmo only explains numbers the engine computed. "Can I afford $X?"
+questions get an affordability check computed on the server first.
 
-All money values are whole dollars, already rounded.
-
-## POST /api/chat  (Cosmo)
-Body:
-```json
-{ "customerId": "maria", "message": "What should I do when my lease ends?",
-  "history": [ { "role": "user", "text": "..." }, { "role": "cosmo", "text": "..." } ],
-  "assumptions": { "gasPrice": 3.5 } }
-```
-Returns `{ "reply": "...", "source": "gemini" | "fallback" }`.
-Keep the conversation in React state and send it back as `history` each time.
-If Gemini is down or no key is set, Cosmo still answers using our numbers (`source: "fallback"`).
+## Saved paths (Tiger Data)
+| Route | What it does |
+|---|---|
+| `GET /db/status` | `{ enabled }`. The Save button hides when the database isn't connected |
+| `POST /paths` | Save `{ customerId, optionId, name, assumptions }`. The server re-runs the simulation and stores the forecast in a TimescaleDB hypertable |
+| `GET /customers/:id/saved-paths` | Saved paths, newest first |
+| `GET /saved-paths/compare?ids=1,2&bucket=month\|quarter` | Forecasts grouped with `time_bucket` |
+| `DELETE /saved-paths/:id` | Delete a saved path and its forecast |

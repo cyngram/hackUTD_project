@@ -28,7 +28,7 @@ function buildData(customer, overview, sim, afford) {
   lines.push(`Credit score ${overview.creditScore.value} (${overview.creditScore.label}).`);
   lines.push(`Current car: ${overview.vehicle.model}, ${overview.vehicle.status}.`);
   lines.push(`Today's health: ${overview.health.map((h) => `${h.label} ${h.display} (${h.status})`).join('; ')}.`);
-  lines.push(`Assumptions: gas $${sim.assumptions.gasPrice}/gal, income gap ${sim.assumptions.incomeGapMonths} months, surprise repair $${sim.assumptions.surpriseRepair}.`);
+  lines.push(`Assumptions: gas $${sim.assumptions.gasPrice}/gal, one-time expense $${sim.assumptions.surpriseRepair}.`);
   if (sim.assumptions.plans?.length) {
     const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     lines.push(`Their plans: ${sim.assumptions.plans.map((p) => `${p.label} ${p.amount >= 0 ? '+' : '-'}$${Math.abs(p.amount)} ${p.repeat === false ? 'once in' : 'every'} ${MONTHS[p.month]}`).join('; ')}.`);
