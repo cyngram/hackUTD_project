@@ -1,7 +1,7 @@
 # Orbit API
 
 All routes start with `/api`. In React: `fetch('/api/...')`. Money is in whole dollars, already rounded.
-Customers: `maria` and `jordan`.
+Customers: `alex`, `maya` and `dana` (edit them in `server/data/customers.json`; any new entry shows up automatically).
 
 ## Home screen
 | Route | Returns |
@@ -31,7 +31,10 @@ Returns `recommendation` (`headline`, `nextStep`), `smallShift` (a tip), `assump
 ## Cosmo
 `POST /chat` with `{ customerId, message, history: [{ role: 'user' | 'cosmo', text }], assumptions }`.
 Returns `{ reply, source: 'gemini' | 'fallback' }`. Cosmo only explains numbers the engine computed. "Can I afford $X?"
-questions get an affordability check computed on the server first.
+questions get an affordability check computed on the server first. Every message also gets the spending trends
+(from `budget`) and what-if results (each milestone pushed back a year, and big planned costs skipped), so Cosmo
+can answer "what if" questions with real numbers. If Gemini is unavailable, a backup answer that matches the
+question is built from the same numbers.
 
 ## Saved paths (Tiger Data)
 | Route | What it does |

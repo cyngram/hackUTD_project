@@ -101,7 +101,7 @@ app.get('/api/customers/:id/overview', (req, res) => {
 });
 
 // The simulator: compare every option for one customer
-// Body: { customerId: "maria", assumptions: { gasPrice, monthlyIncome, surpriseRepair, plans, milestones, weeklyMiles, ... } }
+// Body: { customerId: "alex", assumptions: { gasPrice, monthlyIncome, surpriseRepair, plans, milestones, weeklyMiles, ... } }
 app.post('/api/simulate', (req, res) => {
   const { customerId, assumptions = {} } = req.body || {};
   const customer = loadCustomers().find((c) => c.id === customerId);

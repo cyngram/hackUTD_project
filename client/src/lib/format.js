@@ -4,7 +4,7 @@
 export const money = (n) =>
   `${n < 0 ? "-" : ""}$${Math.abs(Math.round(n)).toLocaleString("en-US")}`;
 
-// "Maria Lopez" -> "ML"
+// "Alex Rivera" -> "AR"
 export const initials = (name = "") =>
   name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
