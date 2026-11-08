@@ -1,0 +1,15 @@
+[
+  {
+    "id": "maria",
+    "name": "Maria Lopez",
+    "age": 26,
+    "story": "New grad, 40-min commute, lease ends in 3 months",
+    "monthlyIncome": 4200,
+    "rent": 1300,
+    "utilities": 180,
+    "savings": 4000,
+    "cardBalance": 2100,
+    "cardLimit": 5000,
+    "vehicle": { "model": "2023 Corolla", "type": "lease", "payment": 320, "monthsLeft": 3 }
+  }
+]

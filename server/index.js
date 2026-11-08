@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url'; 
+import fs from 'fs';
 
 const app = express();
 app.use(express.json());    // Parse incoming JSON requests
@@ -10,8 +11,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDir = path.join(__dirname, '..', 'client', 'dist');
 
 //----API routes here--------
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', app: 'Orbit' });
+app.get('/api/customers', (req, res) => {
+  const filePath = path.join(__dirname, 'data', 'customers.json');
+  const customers = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  res.json(customers);
 });
 
 //serve React files
