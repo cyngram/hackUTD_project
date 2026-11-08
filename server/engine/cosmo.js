@@ -8,10 +8,17 @@ const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
 const RULES = `You are Cosmo, the friendly money guide inside Orbit, a Toyota + PNC financial dashboard.
 Rules:
-- Use ONLY the numbers in the DATA section. Never invent numbers. If something isn't in the data, say you don't know.
+- Use ONLY the numbers in the DATA section. Never invent numbers or do your own math.
+- Answer the question in your FIRST sentence (yes / no / the date / the number), then explain.
+- For "what if" questions (moving a trip or goal, holding off on purchases), use WHAT-IF RESULTS and compare them with "As planned today": say what moves and by how much. Never say you can't recalculate.
+- If a what-if shows no change, say so plainly and give that goal's current date from "As planned today".
+- If no what-if result fits, say what you do know, then point them to the matching tab under "Make it yours" (What-ifs, Plans, Milestones, Your car) to try it on their path.
+- For questions about spending habits, use SPENDING TRENDS: name their tight months and what drives them.
+- Describe savings cushions with the plain-words version in the data (like "about 3 days of bills"), never "0.1 months".
 - Plain language for someone who is not a finance expert. Explain any term you use.
-- Keep answers short: 3-6 sentences, or a few short bullets.
+- Keep answers short: 2-4 sentences, or at most 3 short bullets. No jargon.
 - When giving advice: give ONE clear recommendation, the main reason, and one or two other options with their trade-offs.
+- For car or path questions: one sentence with our pick and why, then one short bullet per other path (car cost per month and how it compares), then the next step. Skip loan details, interest and insurance unless they ask.
 - End with a short follow-up question such as "Want to explore other options?"
 - Be warm and honest. If every option has a risk, say so kindly.
 - For "can I afford" questions, use the AFFORDABILITY CHECK in the data: answer clearly (yes / it's tight / not yet), say what it does to their savings cushion, then give exactly three ideas: (1) the full purchase, (2) a scaled-down version, (3) saving up first and when they could buy it.
@@ -19,14 +26,25 @@ Rules:
 - When milestones (home, trips, school) are in the data, mention how each path affects reaching them. That is often the most important trade-off.
 - This is a demo with made-up customers. Do not ask for personal or account information.`;
 
+// Savings cushion in words anyone gets: "about 3 days of bills", "about 2.5 months of bills"
+function cushionText(months) {
+  if (months < 1) return `about ${Math.max(1, Math.round(months * 30))} days of bills`;
+  return `about ${months.toFixed(1)} months of bills`;
+}
+
+// One line per milestone: "Family road trip on time, reached March 2027"
+const milestoneText = (list) =>
+  list.map((m) => `${m.label} ${m.reached ? `${m.onTrack ? 'on time' : 'late'}, reached ${m.reached}` : 'not reached within 5 years'}`).join('; ');
+
 // Turn the engine output into a compact text summary for the model
-function buildData(customer, overview, sim, afford) {
+function buildData(customer, overview, sim, afford, whatIfs, trends) {
   const lines = [];
   lines.push(`Customer: ${customer.name}, ${customer.age}. ${customer.household}. ${customer.story}`);
   lines.push(`Monthly income $${overview.monthlyIncome}, monthly bills $${overview.monthlyExpenses}.`);
   lines.push(`Accounts: ${overview.accounts.map((a) => `${a.label} $${a.amount}`).join(', ')}.`);
   lines.push(`Credit score ${overview.creditScore.value} (${overview.creditScore.label}).`);
   lines.push(`Current car: ${overview.vehicle.model}, ${overview.vehicle.status}.`);
+  lines.push(`Savings cushion: ${cushionText(customer.savings / overview.monthlyExpenses)}.`);
   lines.push(`Today's health: ${overview.health.map((h) => `${h.label} ${h.display} (${h.status})`).join('; ')}.`);
   lines.push(`Assumptions: gas $${sim.assumptions.gasPrice}/gal, one-time expense $${sim.assumptions.surpriseRepair}.`);
   if (sim.assumptions.plans?.length) {
@@ -59,18 +77,52 @@ function buildData(customer, overview, sim, afford) {
       (afford.saveFirstMonths ? `To buy it and still keep a 3-month cushion, save for about ${afford.saveFirstMonths} months (${afford.saveFirstBy}).` : 'They can buy it and still keep a 3-month cushion.')
     );
   }
+  if (trends) {
+    const tight = trends.months.filter((m) => m.leftover < 0).map((m) => m.label);
+    lines.push(
+      `SPENDING TRENDS for the next 12 months: about $${trends.avgSpending}/mo on average; busiest month ${trends.busiest.label} ($${trends.busiest.spending}); ` +
+      (tight.length ? `tight months (spending more than income): ${tight.join(', ')}.` : 'no month spends more than income.')
+    );
+  }
+  if (whatIfs) {
+    lines.push(`WHAT-IF RESULTS (already calculated for the recommended path, ${whatIfs.path}):`);
+    const base = whatIfs.today;
+    const signed = (n) => `${n >= 0 ? '+' : '-'}$${Math.abs(n)}`;
+    for (const r of [base, ...whatIfs.changes]) {
+      // Differences vs today are calculated here, so the model never has to subtract
+      // Only real changes are listed; "no change" gets a plain explanation instead of "+$0"
+      const changes = [];
+      if (r !== base) {
+        if (r.in5Years !== base.in5Years) changes.push(`5-year net worth ${signed(r.in5Years - base.in5Years)}`);
+        if (r.lowest !== base.lowest) changes.push(`lowest savings point ${signed(r.lowest - base.lowest)}`);
+        for (const m of r.milestones) {
+          const before = base.milestones.find((b) => b.label === m.label)?.reachedMonth;
+          if (before == null || m.reachedMonth == null || before === m.reachedMonth) continue;
+          const diff = m.reachedMonth - before;
+          changes.push(`${m.label} ${Math.abs(diff)} months ${diff < 0 ? 'sooner' : 'later'}`);
+        }
+      }
+      const vsToday = r === base ? ''
+        : changes.length ? ` Compared with today: ${changes.join(', ')}.`
+        : ' No change to any dates or savings.';
+      lines.push(
+        `- ${r.label}: lowest savings point $${r.lowest} (${r.holdsUp ? 'stays above $0' : 'dips below $0'}); ` +
+        `net worth in 5 years $${r.in5Years}; milestones: ${milestoneText(r.milestones) || 'none'}.${vsToday}`
+      );
+    }
+  }
   return lines.join('\n');
 }
 
-// Backup answer that uses only our numbers (used if Gemini is unavailable)
+// Backup answer that uses only our numbers (used if Gemini is unavailable): our pick, then one line per other path
 function fallbackAnswer(customer, sim) {
+  const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`;
   const best = sim.options.find((o) => o.recommended);
-  const others = sim.options.filter((o) => !o.recommended);
-  const alt = others
-    .map((o) => `${o.label} costs $${o.monthly.totalCar}/mo for the car (5-year true cost $${o.fiveYear.netCost.toLocaleString()}).`)
-    .join(' ');
-  return `My pick for ${customer.shortName || customer.name}: ${best.label}. ${best.why} ` +
-    `Other options: ${alt} Next step: ${sim.recommendation.nextStep} Want to explore other options?`;
+  const others = sim.options
+    .filter((o) => !o.recommended)
+    .map((o) => `- ${o.label}: ${money(o.monthly.totalCar)}/mo for the car, ${money(o.fiveYear.netCost - best.fiveYear.netCost)} more over 5 years`);
+  return `My pick: **${best.label}**, the lowest true cost over 5 years (${money(best.fiveYear.netCost)}).\n` +
+    `${others.join('\n')}\nNext step: ${sim.recommendation.nextStep}`;
 }
 
 // Backup answer for "can I afford it?" questions (used if Gemini is unavailable)
@@ -87,10 +139,33 @@ function fallbackAfford(customer, a) {
     `3) Or ${later}. Want to explore other options?`;
 }
 
+// Backup answer for "what if" questions (used if Gemini is unavailable): lists what each what-if changes
+function fallbackWhatIf(whatIfs) {
+  const money = (n) => `${n < 0 ? '-' : '+'}$${Math.abs(n).toLocaleString('en-US')}`;
+  const base = whatIfs.today;
+  const lines = whatIfs.changes.map((r) => {
+    const moved = r.milestones
+      .map((m) => {
+        const before = base.milestones.find((b) => b.label === m.label)?.reachedMonth;
+        return before != null && m.reachedMonth != null && before !== m.reachedMonth ? `${m.label} by ${m.reached}` : null;
+      })
+      .filter(Boolean);
+    const gain = r.in5Years - base.in5Years;
+    return gain === 0 && moved.length === 0
+      ? `- ${r.label}: no change to your dates or savings.`
+      : `- ${r.label}: ${[gain !== 0 ? `${money(gain)} in 5 years` : null, ...moved].filter(Boolean).join(', ')}.`;
+  });
+  return `Here's what each change does with our pick (${whatIfs.path}):\n${lines.join('\n')}\nWant to try one? Use the Plans or Milestones tab under "Make it yours".`;
+}
+
+const isWhatIf = (message) => /what if|push|delay|postpone|hold off|skip|wait|later|next year/i.test(message);
+
 // history = [{ role: 'user' | 'cosmo', text: '...' }]
-export async function askCosmo({ customer, overview, sim, message, history = [], afford = null }) {
+export async function askCosmo({ customer, overview, sim, message, history = [], afford = null, whatIfs = null, trends = null }) {
   const key = process.env.GEMINI_API_KEY;
-  const backup = afford ? fallbackAfford(customer, afford) : fallbackAnswer(customer, sim);
+  const backup = afford ? fallbackAfford(customer, afford)
+    : whatIfs && isWhatIf(message) ? fallbackWhatIf(whatIfs)
+    : fallbackAnswer(customer, sim);
   if (!key) return { reply: backup, source: 'fallback' };
 
   const contents = [
@@ -107,7 +182,7 @@ export async function askCosmo({ customer, overview, sim, message, history = [],
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: `${RULES}\n\nDATA:\n${buildData(customer, overview, sim, afford)}` }] },
+        system_instruction: { parts: [{ text: `${RULES}\n\nDATA:\n${buildData(customer, overview, sim, afford, whatIfs, trends)}` }] },
         contents,
       }),
       signal: AbortSignal.timeout(20000),

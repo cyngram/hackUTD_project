@@ -3,7 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url'; 
 import fs from 'fs';
-import { simulate, overview, moments, affordability, budget } from './engine/finance.js';
+import { simulate, overview, moments, affordability, budget, scenarios } from './engine/finance.js';
 import { askCosmo } from './engine/cosmo.js';
 import { dbReady, query, setupDatabase } from './db.js';
 
@@ -121,7 +121,11 @@ app.post('/api/chat', async (req, res) => {
   const sim = simulate(customer, cleanAssumptions(assumptions));
   const amount = findAmount(message);                       // e.g. "can I afford a $1,200 laptop?" -> 1200
   const afford = amount ? affordability(customer, amount) : null;
-  const result = await askCosmo({ customer, overview: overview(customer), sim, message, history, afford });
+  const result = await askCosmo({
+    customer, overview: overview(customer), sim, message, history, afford,
+    whatIfs: scenarios(customer, cleanAssumptions(assumptions)),   // the engine runs the what-ifs, Cosmo explains them
+    trends: budget(customer),                                       // seasonal spending for the next 12 months
+  });
   res.json(result);
 });
 

@@ -497,6 +497,42 @@ function nextStepFor(option, customer) {
   return 'Get pre-approved for financing so you know your rate before you shop.';
 }
 
+// ---------- What-ifs for Cosmo ----------
+// Re-runs our pick with one change at a time, so Cosmo explains real numbers instead of guessing.
+// Works for any customer: every milestone gets a "push back a year" run, plus one "hold off on big costs" run.
+export function scenarios(customer, assumptions = {}) {
+  const base = simulate(customer, assumptions);
+  const pick = base.options.find((o) => o.recommended);
+  const a = base.assumptions;
+  const summarize = (label, o) => ({
+    label,
+    lowest: o.stress.savingsAfter,
+    holdsUp: o.stress.holdsUp,
+    in5Years: o.forecast[60].net,
+    milestones: o.milestones,
+  });
+  const run = (label, change) =>
+    summarize(label, simulate(customer, { ...a, ...change }).options.find((o) => o.id === pick.id));
+
+  const bigCosts = a.plans.filter((plan) => plan.amount <= -200);   // "big purchases" = planned costs of $200+
+  return {
+    path: pick.label,
+    today: summarize("As planned today", pick),
+    changes: [
+      // Pushed goals go last in line, so the goals still due sooner get saved for first
+      ...a.milestones.map((m) =>
+        run(`Push "${m.label}" back a year`, {
+          milestones: [...a.milestones.filter((x) => x !== m), { ...m, targetMonth: m.targetMonth + 12 }],
+        })),
+      ...(bigCosts.length
+        ? [run(`Hold off on big planned costs (${bigCosts.map((plan) => plan.label).join(", ")})`, {
+            plans: a.plans.filter((plan) => !bigCosts.includes(plan)),
+          })]
+        : []),
+    ],
+  };
+}
+
 // ---------- "Coming up" + nudges for the home screen ----------
 // The date a number of months from now. Starts from the 1st so adding months
 // never skips one (Jan 31 + 1 month would otherwise land in March).
