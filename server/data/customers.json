@@ -1,340 +1,313 @@
 [
   {
-    "id": "maria",
-    "name": "Maria Lopez",
-    "shortName": "Maria",
-    "age": 26,
+    "id": "alex",
+    "name": "Alex Rivera",
+    "shortName": "Alex",
+    "age": 34,
     "household": "Single, renting",
-    "story": "New grad with a 40-minute commute. Her Corolla lease ends in 3 months.",
-    "monthlyIncome": 4200,
+    "story": "Marketing director with strong savings and a bonus every spring. His Highlander lease ends in 5 months, and Japan is next on the list.",
+    "monthlyIncome": 8300,
     "housingType": "rent",
-    "housing": 1300,
-    "utilities": 180,
-    "otherExpenses": 900,
-    "checking": 1800,
-    "savings": 6500,
-    "creditScore": 690,
-    "cardBalance": 2100,
-    "cardLimit": 5000,
-    "dailyCommuteMiles": 52,
-    "spendingPattern": [
-      0.9,
-      0.85,
-      0.95,
-      1.0,
-      1.0,
-      1.05,
-      1.15,
-      1.05,
-      0.95,
-      0.95,
-      1.0,
-      1.15
-    ],
+    "housing": 2400,
+    "utilities": 280,
+    "otherExpenses": 1450,
+    "checking": 9500,
+    "savings": 52000,
+    "creditScore": 785,
+    "cardBalance": 900,
+    "cardLimit": 25000,
+    "dailyCommuteMiles": 24,
+    "spendingPattern": [0.95, 0.9, 1.0, 1.0, 1.0, 1.05, 1.1, 1.05, 0.95, 1.0, 1.05, 1.2],
     "vehicle": {
-      "model": "2023 Toyota Corolla",
+      "model": "2024 Toyota Highlander",
       "type": "lease",
-      "mileage": 34000,
-      "mpg": 34,
-      "payment": 320,
-      "insurance": 140,
+      "mileage": 24000,
+      "mpg": 24,
+      "payment": 520,
+      "insurance": 170,
       "maintenance": 0,
-      "monthsLeft": 3,
-      "lastOilChangeMiles": 31000
+      "monthsLeft": 5,
+      "lastOilChangeMiles": 21000
     },
     "options": [
       {
         "id": "buyout",
-        "label": "Buy out your Corolla lease",
+        "label": "Buy out your Highlander lease",
         "type": "finance",
-        "price": 17500,
+        "price": 34000,
         "tradeIn": 0,
-        "upfront": 1000,
-        "apr": 6.9,
-        "termMonths": 48,
-        "mpg": 34,
-        "insurance": 140,
+        "upfront": 3000,
+        "apr": 5.2,
+        "termMonths": 60,
+        "mpg": 24,
+        "insurance": 170,
         "maintenance": 25,
-        "valueIn5Years": 9000,
-        "perk": "Keep the car you already know",
+        "valueIn5Years": 21000,
+        "perk": "Keep the SUV you already know",
         "serviceEvents": [
-          {
-            "label": "40k-mile service",
-            "atMiles": 40000,
-            "amount": 450
-          },
-          {
-            "label": "New tires",
-            "atMiles": 55000,
-            "amount": 700
-          },
-          {
-            "label": "60k-mile service",
-            "atMiles": 60000,
-            "amount": 600
-          }
+          { "label": "30k-mile service", "atMiles": 30000, "amount": 350 },
+          { "label": "New tires", "atMiles": 45000, "amount": 1000 }
         ],
         "startMiles": "current",
         "oilInterval": 10000
       },
       {
+        "id": "release",
+        "label": "Lease a new Highlander",
+        "type": "lease",
+        "leasePayment": 540,
+        "upfront": 2500,
+        "mpg": 24,
+        "insurance": 175,
+        "maintenance": 0,
+        "valueIn5Years": 0,
+        "perk": "Always in a new SUV",
+        "serviceEvents": [],
+        "startMiles": 0
+      },
+      {
         "id": "hybrid",
-        "label": "Trade up to a Corolla Hybrid",
+        "label": "Switch to a RAV4 Hybrid",
         "type": "finance",
-        "price": 26000,
+        "price": 38000,
         "tradeIn": 0,
-        "upfront": 1500,
+        "upfront": 5000,
         "apr": 4.9,
         "termMonths": 60,
-        "mpg": 50,
-        "insurance": 150,
+        "mpg": 40,
+        "insurance": 160,
         "maintenance": 0,
-        "valueIn5Years": 15000,
-        "perk": "2 years of included maintenance",
+        "valueIn5Years": 24000,
+        "perk": "Best gas mileage + 2 years of included maintenance",
         "serviceEvents": [
-          {
-            "label": "30k-mile service",
-            "atMiles": 30000,
-            "amount": 300
-          },
-          {
-            "label": "New tires",
-            "atMiles": 45000,
-            "amount": 750
-          }
+          { "label": "30k-mile service", "atMiles": 30000, "amount": 300 },
+          { "label": "New tires", "atMiles": 45000, "amount": 800 }
         ],
         "startMiles": 0,
         "oilInterval": 10000,
-        "includedMaintenance": {
-          "months": 24,
-          "miles": 25000
-        }
-      },
-      {
-        "id": "release",
-        "label": "Lease a new Corolla",
-        "type": "lease",
-        "leasePayment": 340,
-        "upfront": 1000,
-        "mpg": 34,
-        "insurance": 140,
-        "maintenance": 0,
-        "valueIn5Years": 0,
-        "perk": "Always in a new car",
-        "serviceEvents": [],
-        "startMiles": 0
+        "includedMaintenance": { "months": 24, "miles": 25000 }
       }
     ],
     "plans": [
-      {
-        "label": "Tax refund",
-        "amount": 900,
-        "month": 2
-      },
-      {
-        "label": "Summer trip",
-        "amount": -1200,
-        "month": 6
-      },
-      {
-        "label": "Holiday gifts",
-        "amount": -600,
-        "month": 11
-      }
+      { "label": "Annual bonus", "amount": 9000, "month": 2 },
+      { "label": "Summer vacation", "amount": -2500, "month": 6 },
+      { "label": "Holiday gifts", "amount": -1500, "month": 11 }
     ],
     "milestones": [
-      {
-        "label": "Grad school fund",
-        "kind": "opportunity",
-        "amount": 8000,
-        "targetMonth": 24
-      },
-      {
-        "label": "Home down payment",
-        "kind": "home",
-        "amount": 25000,
-        "targetMonth": 36
-      }
+      { "label": "Japan trip", "kind": "trip", "amount": 7000, "targetMonth": 8 },
+      { "label": "Home down payment", "kind": "home", "amount": 80000, "targetMonth": 36 }
     ]
   },
   {
-    "id": "jordan",
-    "name": "Jordan Carter",
-    "shortName": "Jordan",
-    "age": 38,
-    "household": "Homeowner, two kids",
-    "story": "Homeowner with two kids and a paid-off 2016 Camry at 112,000 miles. It needs a big service soon.",
-    "monthlyIncome": 9500,
-    "housingType": "mortgage",
-    "housing": 2400,
-    "utilities": 350,
-    "otherExpenses": 2600,
-    "checking": 5200,
-    "savings": 22000,
-    "creditScore": 762,
-    "cardBalance": 600,
-    "cardLimit": 15000,
-    "dailyCommuteMiles": 18,
-    "spendingPattern": [
-      0.9,
-      0.88,
-      0.95,
-      1.0,
-      1.02,
-      1.1,
-      1.15,
-      1.1,
-      0.95,
-      0.92,
-      0.98,
-      1.05
-    ],
+    "id": "maya",
+    "name": "Maya Patel",
+    "shortName": "Maya",
+    "age": 21,
+    "household": "College student, shares an apartment",
+    "story": "Junior working part-time with minimal financial aid. She pays $150 a month toward $28,000 in student loans, and her old Corolla needs new brakes.",
+    "monthlyIncome": 1550,
+    "housingType": "rent",
+    "housing": 600,
+    "utilities": 55,
+    "otherExpenses": 500,
+    "checking": 350,
+    "savings": 300,
+    "creditScore": 680,
+    "cardBalance": 1200,
+    "cardLimit": 1500,
+    "dailyCommuteMiles": 12,
+    "spendingPattern": [1.0, 1.0, 0.95, 0.95, 1.0, 0.9, 0.9, 1.1, 1.1, 1.0, 1.0, 1.1],
     "vehicle": {
-      "model": "2016 Toyota Camry",
+      "model": "2012 Toyota Corolla",
       "type": "owned",
-      "mileage": 112000,
+      "mileage": 138000,
       "mpg": 30,
       "payment": 0,
-      "insurance": 110,
-      "maintenance": 90,
+      "insurance": 105,
+      "maintenance": 60,
       "monthsLeft": 0,
-      "lastOilChangeMiles": 108500
+      "lastOilChangeMiles": 135500
     },
     "options": [
       {
         "id": "keep",
-        "label": "Keep the Camry and do the 120k service",
+        "label": "Keep the Corolla and fix the brakes",
         "type": "keep",
-        "valueToday": 9000,
-        "upfront": 1200,
+        "valueToday": 3500,
+        "upfront": 450,
         "mpg": 30,
-        "insurance": 110,
-        "maintenance": 40,
-        "valueIn5Years": 4000,
-        "perk": "No new loan",
+        "insurance": 105,
+        "maintenance": 60,
+        "valueIn5Years": 1000,
+        "perk": "No car payment",
         "serviceEvents": [
-          {
-            "label": "New tires",
-            "atMiles": 115000,
-            "amount": 800
-          },
-          {
-            "label": "Brake service",
-            "atMiles": 125000,
-            "amount": 600
-          },
-          {
-            "label": "Water pump and belts",
-            "atMiles": 135000,
-            "amount": 1100
-          },
-          {
-            "label": "150k-mile service",
-            "atMiles": 150000,
-            "amount": 900
-          }
+          { "label": "New tires", "atMiles": 142000, "amount": 450 },
+          { "label": "New battery", "atMiles": 145000, "amount": 200 },
+          { "label": "Water pump and belts", "atMiles": 150000, "amount": 700 }
+        ],
+        "startMiles": "current",
+        "oilInterval": 5000
+      },
+      {
+        "id": "tradedown",
+        "label": "Trade down to a 2015 Corolla",
+        "type": "finance",
+        "price": 7500,
+        "tradeIn": 3500,
+        "upfront": 1000,
+        "apr": 9.9,
+        "termMonths": 24,
+        "mpg": 32,
+        "insurance": 110,
+        "maintenance": 30,
+        "valueIn5Years": 4000,
+        "perk": "Fewer repairs than a 2012",
+        "serviceEvents": [
+          { "label": "New tires", "atMiles": 115000, "amount": 500 }
+        ],
+        "startMiles": 105000,
+        "oilInterval": 7500
+      },
+      {
+        "id": "usedbuy",
+        "label": "Buy a used 2019 Corolla",
+        "type": "finance",
+        "price": 11000,
+        "tradeIn": 3500,
+        "upfront": 500,
+        "apr": 9.5,
+        "termMonths": 48,
+        "mpg": 32,
+        "insurance": 140,
+        "maintenance": 30,
+        "valueIn5Years": 5500,
+        "perk": "Newest and most reliable, but the biggest payment",
+        "serviceEvents": [
+          { "label": "New tires", "atMiles": 80000, "amount": 600 },
+          { "label": "60k-mile service", "atMiles": 85000, "amount": 400 }
+        ],
+        "startMiles": 70000,
+        "oilInterval": 7500
+      }
+    ],
+    "plans": [
+      { "label": "Spring textbooks", "amount": -300, "month": 0 },
+      { "label": "Tax refund", "amount": 450, "month": 2 },
+      { "label": "Summer full-time shifts", "amount": 1200, "month": 6 },
+      { "label": "Fall textbooks", "amount": -350, "month": 7 },
+      { "label": "Holiday gifts", "amount": -150, "month": 11 }
+    ],
+    "milestones": [
+      { "label": "Trip home", "kind": "trip", "amount": 800, "targetMonth": 6 },
+      { "label": "Emergency fund", "kind": "goal", "amount": 1500, "targetMonth": 12 }
+    ]
+  },
+  {
+    "id": "dana",
+    "name": "Dana Brooks",
+    "shortName": "Dana",
+    "age": 38,
+    "household": "Renting, paycheck to paycheck",
+    "story": "Medical office staff who covers every bill but has little room to spare. A $3,800 credit card balance at a high rate and an overdue SUV service are the squeeze.",
+    "monthlyIncome": 3600,
+    "housingType": "rent",
+    "housing": 1350,
+    "utilities": 240,
+    "otherExpenses": 960,
+    "checking": 500,
+    "savings": 400,
+    "creditScore": 640,
+    "cardBalance": 3800,
+    "cardLimit": 5000,
+    "dailyCommuteMiles": 28,
+    "spendingPattern": [0.95, 0.92, 1.0, 1.0, 1.0, 1.05, 1.05, 1.1, 1.0, 0.98, 1.02, 1.12],
+    "vehicle": {
+      "model": "2018 Toyota RAV4",
+      "type": "financed",
+      "mileage": 104000,
+      "mpg": 26,
+      "payment": 380,
+      "insurance": 150,
+      "maintenance": 80,
+      "monthsLeft": 41,
+      "lastOilChangeMiles": 100500
+    },
+    "options": [
+      {
+        "id": "keep",
+        "label": "Keep the RAV4 and finish paying it off",
+        "type": "finance",
+        "price": 13500,
+        "tradeIn": 0,
+        "upfront": 0,
+        "apr": 7.9,
+        "termMonths": 41,
+        "mpg": 26,
+        "insurance": 150,
+        "maintenance": 80,
+        "valueToday": 14000,
+        "valueIn5Years": 6000,
+        "perk": "No new loan, and it is paid off in under 4 years",
+        "serviceEvents": [
+          { "label": "100k-mile service (overdue)", "atMiles": 104500, "amount": 600 },
+          { "label": "New tires", "atMiles": 112000, "amount": 700 },
+          { "label": "Brake service", "atMiles": 120000, "amount": 500 }
         ],
         "startMiles": "current",
         "oilInterval": 10000
       },
       {
-        "id": "sienna",
-        "label": "Trade in for a Sienna Hybrid",
+        "id": "tradedown",
+        "label": "Trade down to a used Corolla",
         "type": "finance",
-        "price": 41000,
-        "tradeIn": 9000,
+        "price": 14000,
+        "tradeIn": 2500,
         "upfront": 0,
-        "apr": 5.4,
-        "termMonths": 60,
-        "mpg": 36,
-        "insurance": 170,
-        "maintenance": 0,
-        "valueIn5Years": 22000,
-        "perk": "Room for the whole family + 2 years of included maintenance",
+        "apr": 8.4,
+        "termMonths": 48,
+        "mpg": 32,
+        "insurance": 130,
+        "maintenance": 40,
+        "valueIn5Years": 7500,
+        "perk": "Lower payment and better gas mileage",
         "serviceEvents": [
-          {
-            "label": "30k-mile service",
-            "atMiles": 30000,
-            "amount": 400
-          },
-          {
-            "label": "New tires",
-            "atMiles": 40000,
-            "amount": 900
-          }
+          { "label": "New tires", "atMiles": 95000, "amount": 600 },
+          { "label": "100k-mile service", "atMiles": 100000, "amount": 450 }
+        ],
+        "startMiles": 80000,
+        "oilInterval": 10000
+      },
+      {
+        "id": "newcar",
+        "label": "Trade up to a new Corolla",
+        "type": "finance",
+        "price": 24000,
+        "tradeIn": 2500,
+        "upfront": 1500,
+        "apr": 9.9,
+        "termMonths": 72,
+        "mpg": 34,
+        "insurance": 175,
+        "maintenance": 0,
+        "valueIn5Years": 13000,
+        "perk": "Warranty and 2 years of included maintenance, but a long loan",
+        "serviceEvents": [
+          { "label": "30k-mile service", "atMiles": 30000, "amount": 300 }
         ],
         "startMiles": 0,
         "oilInterval": 10000,
-        "includedMaintenance": {
-          "months": 24,
-          "miles": 25000
-        }
-      },
-      {
-        "id": "rav4",
-        "label": "Trade in for a certified used RAV4",
-        "type": "finance",
-        "price": 27000,
-        "tradeIn": 9000,
-        "upfront": 0,
-        "apr": 6.4,
-        "termMonths": 48,
-        "mpg": 30,
-        "insurance": 135,
-        "maintenance": 20,
-        "valueIn5Years": 15000,
-        "perk": "Certified warranty",
-        "serviceEvents": [
-          {
-            "label": "New tires",
-            "atMiles": 45000,
-            "amount": 700
-          },
-          {
-            "label": "60k-mile service",
-            "atMiles": 60000,
-            "amount": 450
-          }
-        ],
-        "startMiles": 30000,
-        "oilInterval": 10000
+        "includedMaintenance": { "months": 24, "miles": 25000 }
       }
     ],
     "plans": [
-      {
-        "label": "Tax refund",
-        "amount": 2200,
-        "month": 2
-      },
-      {
-        "label": "Kids' summer camp",
-        "amount": -1500,
-        "month": 5
-      },
-      {
-        "label": "Family vacation",
-        "amount": -3000,
-        "month": 6
-      },
-      {
-        "label": "Holiday gifts",
-        "amount": -1200,
-        "month": 11
-      }
+      { "label": "Tax refund", "amount": 1100, "month": 2 },
+      { "label": "Car registration", "amount": -120, "month": 4 },
+      { "label": "Back-to-school", "amount": -250, "month": 7 },
+      { "label": "Holiday gifts", "amount": -400, "month": 11 }
     ],
     "milestones": [
-      {
-        "label": "Kitchen remodel",
-        "kind": "home",
-        "amount": 40000,
-        "targetMonth": 12
-      },
-      {
-        "label": "Family trip to Japan",
-        "kind": "trip",
-        "amount": 12000,
-        "targetMonth": 18
-      }
+      { "label": "Family road trip", "kind": "trip", "amount": 1500, "targetMonth": 12 },
+      { "label": "Emergency fund", "kind": "goal", "amount": 3000, "targetMonth": 24 }
     ]
   }
 ]

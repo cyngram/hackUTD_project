@@ -39,7 +39,7 @@ function App() {
   const [selected, setSelected] = useState(null);
   const [cosmoOpen, setCosmoOpen] = useState(false);
   const [customers, setCustomers] = useState([]);          // the account list for "Switch account"
-  const [customerId, setCustomerId] = useState("maria");   // which account is showing
+  const [customerId, setCustomerId] = useState("alex");   // which account is showing
   const [overview, setOverview] = useState(null);          // accounts, home, vehicle, credit, health
   const [moments, setMoments] = useState(null);            // "Coming up" + nudges
   const [paths, setPaths] = useState(null);                // path results, loaded early so the path page opens instantly
@@ -292,7 +292,7 @@ function App() {
               </p>
             </div>
             <div
-              className="gauge"
+                 className={`gauge ${overview?.creditScore.status ?? ""}`}
               style={{ "--score": `${overview ? Math.round(((overview.creditScore.value - 300) / 550) * 88) : 0}%` }}
             >
               <div>

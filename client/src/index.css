@@ -460,11 +460,14 @@ main {
   border-radius: 50%;
   background: conic-gradient(
     from 220deg,
-    var(--blue) 0 var(--score),
+       var(--gauge-color, var(--blue)) 0 var(--score),
     var(--line) var(--score) 88%,
     transparent 88%
   );
 }
+   .gauge.strong { --gauge-color: var(--green); }
+   .gauge.okay { --gauge-color: #e0b030; }
+   .gauge.low { --gauge-color: #d0574f; }
 .gauge::before {
   content: "";
   position: absolute;
