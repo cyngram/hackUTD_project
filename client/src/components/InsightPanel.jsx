@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Bot, X } from "lucide-react";
+import { Bot, X } from "lucide-react";
 import { money } from "../lib/format";
 import { ICONS, DEFAULT_ICON } from "../lib/icons";
 
@@ -29,10 +29,7 @@ export default function InsightPanel({ section, overview, onClose, onAsk }) {
         aria-labelledby="detail-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="panel-header">
-          <button className="back-button" onClick={onClose}>
-            <ArrowLeft size={18} /> Dashboard
-          </button>
+        <div className="panel-header panel-header-end">
           <button className="icon-button" onClick={onClose} aria-label="Close details">
             <X size={20} />
           </button>

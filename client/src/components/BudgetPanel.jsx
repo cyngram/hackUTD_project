@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bot, X } from "lucide-react";
+import { Bot, X } from "lucide-react";
 import { api } from "../lib/api";
 import { money } from "../lib/format";
 import ForecastChart from "./ForecastChart";
@@ -34,10 +34,7 @@ export default function BudgetPanel({ customerId, onClose, onAsk }) {
         aria-labelledby="budget-title"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="panel-header">
-          <button className="back-button" onClick={onClose}>
-            <ArrowLeft size={18} /> Dashboard
-          </button>
+        <div className="panel-header panel-header-end">
           <button className="icon-button" onClick={onClose} aria-label="Close budget">
             <X size={20} />
           </button>

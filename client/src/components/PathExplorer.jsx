@@ -171,7 +171,10 @@ export default function PathExplorer({ customerId, comingUp, treat, baseIncome, 
       ) : (
         <>
           <section className="path-choices">
-            {sim.options.map((o, i) => {
+            {[...sim.options]
+              .map((o, i) => ({ o, i }))                       // keep each path's color tied to its original order
+              .sort((a, b) => b.o.recommended - a.o.recommended)  // our pick first
+              .map(({ o, i }) => {
               const Icon = PATH_ICONS[o.type] ?? CarFront;
               const active = o.id === selected.id;
               return (
